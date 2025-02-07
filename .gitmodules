@@ -1,0 +1,3 @@
+[submodule "include/cdm"]
+	path = third-party/cdm
+	url = https://chromium.googlesource.com/chromium/cdm
