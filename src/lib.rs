@@ -4,13 +4,13 @@ use autocxx::include_cpp;
 include_cpp! {
     #include "content_decryption_module.h"
     safety!(unsafe)
-    subclass!("cdm::ContentDecryptionModule_11", OpenCdm)
+    subclass!("cdm::ContentDecryptionModule_10", OpenCdm)
 }
 
 #[subclass(self_owned)]
 pub struct OpenCdm;
 
-impl ffi::cdm::ContentDecryptionModule_11_methods for OpenCdm {
+impl ffi::cdm::ContentDecryptionModule_10_methods for OpenCdm {
     fn Initialize(
         &mut self,
         allow_distinctive_identifier: bool,
