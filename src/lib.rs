@@ -1,5 +1,5 @@
-use autocxx::prelude::*;
-use autocxx::subclass::*;
+use autocxx::subclass::subclass;
+use autocxx::include_cpp;
 
 include_cpp! {
     #include "content_decryption_module.h"
