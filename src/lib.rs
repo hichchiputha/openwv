@@ -1,3 +1,5 @@
+use std::ffi::c_char;
+
 use autocxx::subclass::subclass;
 use autocxx::include_cpp;
 
@@ -48,7 +50,7 @@ impl ffi::cdm::ContentDecryptionModule_10_methods for OpenWv {
         &mut self,
         promise_id: u32,
         session_type: ffi::cdm::SessionType,
-        session_id: *const ::std::os::raw::c_char,
+        session_id: *const c_char,
         session_id_size: u32,
     ) {
         todo!()
@@ -57,7 +59,7 @@ impl ffi::cdm::ContentDecryptionModule_10_methods for OpenWv {
     unsafe fn UpdateSession(
         &mut self,
         promise_id: u32,
-        session_id: *const ::std::os::raw::c_char,
+        session_id: *const c_char,
         session_id_size: u32,
         response: *const u8,
         response_size: u32,
@@ -68,7 +70,7 @@ impl ffi::cdm::ContentDecryptionModule_10_methods for OpenWv {
     unsafe fn CloseSession(
         &mut self,
         promise_id: u32,
-        session_id: *const ::std::os::raw::c_char,
+        session_id: *const c_char,
         session_id_size: u32,
     ) {
         todo!()
@@ -77,7 +79,7 @@ impl ffi::cdm::ContentDecryptionModule_10_methods for OpenWv {
     unsafe fn RemoveSession(
         &mut self,
         promise_id: u32,
-        session_id: *const ::std::os::raw::c_char,
+        session_id: *const c_char,
         session_id_size: u32,
     ) {
         todo!()
