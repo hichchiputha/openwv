@@ -1,6 +1,13 @@
 use std::path::PathBuf;
+use thiserror::Error;
 
-fn main() -> Result<(), miette::Error> {
+#[derive(Error, Debug)]
+enum BuildError {
+    #[error("autocxx failed in build.rs")]
+    AutoCxxFailure(#[from] autocxx_build::BuilderError),
+}
+
+fn main() -> Result<(), BuildError> {
     let bindings_rs = "src/lib.rs";
 
     let mut autocxx =

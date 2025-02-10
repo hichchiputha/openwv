@@ -18,8 +18,8 @@ byteorder = "1"
 uuid = "1"
 
 [build-dependencies]
-autocxx-build = "0.27"
-miette = { version = "5", features = ["fancy"] }
+autocxx-build = { git = "https://github.com/tchebb/autocxx.git", branch = "reexport-build-types" }
+thiserror = "2"
 
 [lib]
 name = "widevinecdm"
