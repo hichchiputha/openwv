@@ -88,6 +88,7 @@ extern "C" fn CreateCdmInstance(
 
     let openwv = OpenWv::new_self_owned(OpenWv {
         host,
+        allow_persistent_state: false,
         cpp_peer: Default::default(),
     });
 
@@ -112,33 +113,54 @@ use crate::ffi;
 #[subclass(self_owned)]
 pub struct OpenWv {
     host: Pin<&'static mut cdm::Host_10>,
+    allow_persistent_state: bool,
+}
+
+impl OpenWv {
+    fn reject(&mut self, promise_id: u32, exception: cdm::Exception, msg: &std::ffi::CStr) {
+        unsafe {
+            self.host.as_mut().OnRejectPromise(
+                promise_id,
+                exception,
+                0,
+                msg.as_ptr(),
+                msg.count_bytes() as _,
+            );
+        }
+    }
 }
 
 impl cdm::ContentDecryptionModule_10_methods for OpenWv {
     fn Initialize(
         &mut self,
-        allow_distinctive_identifier: bool,
+        _allow_distinctive_identifier: bool,
         allow_persistent_state: bool,
-        use_hw_secure_codecs: bool,
+        _use_hw_secure_codecs: bool,
     ) {
-        debug!(
-            "INITIALIZE CALLED: {}",
-            self.host.as_mut().GetCurrentWallTime()
-        );
-        todo!()
+        debug!("OpenWv({:p}).Initialize()", self);
+        self.allow_persistent_state = allow_persistent_state;
+        self.host.as_mut().OnInitialized(true);
     }
 
     fn GetStatusForPolicy(&mut self, promise_id: u32, policy: &cdm::Policy) {
+        debug!("OpenWv({:p}).GetStatusForPolicy()", self);
         todo!()
     }
 
     unsafe fn SetServerCertificate(
         &mut self,
         promise_id: u32,
-        server_certificate_data: *const u8,
-        server_certificate_data_size: u32,
+        _server_certificate_data: *const u8,
+        _server_certificate_data_size: u32,
     ) {
-        todo!()
+        debug!("OpenWv({:p}).SetServerCertificate()", self);
+
+        // TODO: Implement
+        self.reject(
+            promise_id,
+            cdm::Exception::kExceptionNotSupportedError,
+            c"server certificate not yet implemented",
+        );
     }
 
     unsafe fn CreateSessionAndGenerateRequest(
@@ -149,17 +171,25 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         init_data: *const u8,
         init_data_size: u32,
     ) {
+        debug!("OpenWv({:p}).CreateSessionAndGenerateRequest()", self);
         todo!()
     }
 
     unsafe fn LoadSession(
         &mut self,
         promise_id: u32,
-        session_type: cdm::SessionType,
-        session_id: *const c_char,
-        session_id_size: u32,
+        _session_type: cdm::SessionType,
+        _session_id: *const c_char,
+        _session_id_size: u32,
     ) {
-        todo!()
+        debug!("OpenWv({:p}).LoadSession()", self);
+
+        // TODO: Implement
+        self.reject(
+            promise_id,
+            cdm::Exception::kExceptionNotSupportedError,
+            c"no persistent sessions",
+        );
     }
 
     unsafe fn UpdateSession(
@@ -170,6 +200,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         response: *const u8,
         response_size: u32,
     ) {
+        debug!("OpenWv({:p}).UpdateSession()", self);
         todo!()
     }
 
@@ -179,6 +210,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         session_id: *const c_char,
         session_id_size: u32,
     ) {
+        debug!("OpenWv({:p}).CloseSession()", self);
         todo!()
     }
 
@@ -188,10 +220,13 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         session_id: *const c_char,
         session_id_size: u32,
     ) {
+        debug!("OpenWv({:p}).RemoveSession()", self);
         todo!()
     }
 
+    // TODO: what's this for?
     unsafe fn TimerExpired(&mut self, context: *mut autocxx::c_void) {
+        debug!("OpenWv({:p}).TimerExpired()", self);
         todo!()
     }
 
@@ -200,65 +235,70 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         encrypted_buffer: &cdm::InputBuffer_2,
         decrypted_buffer: *mut cdm::DecryptedBlock,
     ) -> cdm::Status {
+        debug!("OpenWv({:p}).Decrypt()", self);
         todo!()
     }
 
     fn InitializeAudioDecoder(
         &mut self,
-        audio_decoder_config: &cdm::AudioDecoderConfig_2,
+        _audio_decoder_config: &cdm::AudioDecoderConfig_2,
     ) -> cdm::Status {
-        todo!()
+        debug!("OpenWv({:p}).InitializeAudioDecoder()", self);
+        cdm::Status::kInitializationError
     }
 
     fn InitializeVideoDecoder(
         &mut self,
-        video_decoder_config: &cdm::VideoDecoderConfig_2,
+        _video_decoder_config: &cdm::VideoDecoderConfig_2,
     ) -> cdm::Status {
-        todo!()
+        debug!("OpenWv({:p}).InitializeVideoDecoder()", self);
+        cdm::Status::kInitializationError
     }
 
     fn DeinitializeDecoder(&mut self, decoder_type: cdm::StreamType) {
-        todo!()
+        debug!("OpenWv({:p}).DeinitializeDecoder()", self);
     }
 
     fn ResetDecoder(&mut self, decoder_type: cdm::StreamType) {
-        todo!()
+        debug!("OpenWv({:p}).ResetDecoder()", self);
     }
 
     unsafe fn DecryptAndDecodeFrame(
         &mut self,
-        encrypted_buffer: &cdm::InputBuffer_2,
-        video_frame: *mut cdm::VideoFrame,
+        _encrypted_buffer: &cdm::InputBuffer_2,
+        _video_frame: *mut cdm::VideoFrame,
     ) -> cdm::Status {
-        todo!()
+        debug!("OpenWv({:p}).DecryptAndDecodeFrame()", self);
+        cdm::Status::kDecodeError
     }
 
     unsafe fn DecryptAndDecodeSamples(
         &mut self,
-        encrypted_buffer: &cdm::InputBuffer_2,
-        audio_frames: *mut cdm::AudioFrames,
+        _encrypted_buffer: &cdm::InputBuffer_2,
+        _audio_frames: *mut cdm::AudioFrames,
     ) -> cdm::Status {
-        todo!()
+        debug!("OpenWv({:p}).DecryptAndDecodeSamples()", self);
+        cdm::Status::kDecodeError
     }
 
-    fn OnPlatformChallengeResponse(&mut self, response: &cdm::PlatformChallengeResponse) {
-        todo!()
+    fn OnPlatformChallengeResponse(&mut self, _response: &cdm::PlatformChallengeResponse) {
+        debug!("OpenWv({:p}).OnPlatformChallengeResponse()", self);
     }
 
     fn OnQueryOutputProtectionStatus(
         &mut self,
-        result: cdm::QueryResult,
-        link_mask: u32,
-        output_protection_mask: u32,
+        _result: cdm::QueryResult,
+        _link_mask: u32,
+        _output_protection_mask: u32,
     ) {
-        todo!()
+        debug!("OpenWv({:p}).OnQueryOutputProtectionStatus()", self);
     }
 
-    unsafe fn OnStorageId(&mut self, version: u32, storage_id: *const u8, storage_id_size: u32) {
-        todo!()
+    unsafe fn OnStorageId(&mut self, _version: u32, _storage_id: *const u8, _storage_id_size: u32) {
+        debug!("OpenWv({:p}).OnStorageId()", self);
     }
 
     fn Destroy(&mut self) {
-        todo!()
+        self.delete_self();
     }
 }
