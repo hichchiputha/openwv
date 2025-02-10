@@ -11,6 +11,7 @@ edition = "2021"
 [dependencies]
 autocxx = "0.27"
 cxx = "1"
+prost = "0.13"
 thiserror = "2"
 log = "0.4"
 env_logger = "0.11"
@@ -19,6 +20,7 @@ uuid = "1"
 
 [build-dependencies]
 autocxx-build = { git = "https://github.com/tchebb/autocxx.git", branch = "reexport-build-types" }
+prost-build = "0.13"
 thiserror = "2"
 
 [lib]

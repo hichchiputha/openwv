@@ -12,3 +12,7 @@ include_cpp! {
     subclass!("cdm::ContentDecryptionModule_10", OpenWv)
     generate!("cdm::Host_10")
 }
+
+mod video_widevine {
+    include!(concat!(env!("OUT_DIR"), "/video_widevine.rs"));
+}
