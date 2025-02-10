@@ -3,9 +3,8 @@ use std::pin::Pin;
 use std::ptr::null_mut;
 use std::slice;
 
-use crate::ffi;
+use crate::ffi::cdm;
 use crate::util::cstr_from_str;
-use ffi::cdm;
 
 use autocxx::subclass::{subclass, CppSubclassSelfOwned};
 use log::{debug, error};
@@ -105,6 +104,10 @@ const VERSION_STR: &std::ffi::CStr =
 extern "C" fn GetCdmVersion() -> *const c_char {
     VERSION_STR.as_ptr()
 }
+
+// This is needed because autocxx's `#[subclass]` currently hardcodes an `ffi::`
+// module prefix. If autocxx gets more hygienic, we should remove this.
+use crate::ffi;
 
 #[subclass(self_owned)]
 pub struct OpenWv {
