@@ -5,6 +5,7 @@ use uuid::{uuid, Uuid};
 
 use crate::ffi::cdm::InitDataType;
 
+// From https://dashif.org/identifiers/content_protection/
 const WIDEVINE_SYSTEMID: Uuid = uuid!("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed");
 
 #[derive(Error, Debug)]
