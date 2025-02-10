@@ -4,6 +4,8 @@ use thiserror::Error;
 use uuid::{uuid, Uuid};
 
 use crate::ffi::cdm::InitDataType;
+use crate::video_widevine::license_request::{content_identification, ContentIdentification};
+use crate::video_widevine::LicenseType;
 
 // From https://dashif.org/identifiers/content_protection/
 const WIDEVINE_SYSTEMID: Uuid = uuid!("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed");
@@ -24,16 +26,38 @@ pub enum InitDataError {
 pub fn init_data_to_content_id(
     init_data_type: InitDataType,
     init_data: &[u8],
-) -> Result<(), InitDataError> {
+) -> Result<ContentIdentification, InitDataError> {
+    // Note that Google's libwidevinecdm.so seems to use the CencDeprecated and
+    // WebmDeprecated messages instead of the (presumably newer) InitData one.
+    // Since it's clear how the migration works, though, we do it the new way.
     match init_data_type {
         InitDataType::kCenc => {
             let widevine_pssh_data = parse_cenc(init_data)?;
-            // TODO: Wrap in protobuf
-            Ok(())
+
+            let proto = content_identification::InitData {
+                init_data_type: Some(content_identification::init_data::InitDataType::Cenc as i32),
+                init_data: Some(widevine_pssh_data.into()),
+                license_type: Some(LicenseType::Streaming as i32),
+                request_id: Some(rand::random_iter().take(16).collect()),
+            };
+
+            Ok(ContentIdentification {
+                init_data: Some(proto),
+                ..Default::default()
+            })
         }
         InitDataType::kWebM => {
-            // TODO: just wrap the whole thing
-            Ok(())
+            let proto = content_identification::InitData {
+                init_data_type: Some(content_identification::init_data::InitDataType::Webm as i32),
+                init_data: Some(init_data.into()),
+                license_type: Some(LicenseType::Streaming as i32),
+                request_id: Some(rand::random_iter().take(16).collect()),
+            };
+
+            Ok(ContentIdentification {
+                init_data: Some(proto),
+                ..Default::default()
+            })
         }
         InitDataType::kKeyIds => Err(InitDataError::UnsupportedType),
     }
