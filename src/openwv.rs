@@ -1,3 +1,5 @@
+use autocxx::subclass::{subclass, CppSubclassSelfOwned};
+use log::{debug, error};
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::null_mut;
@@ -5,9 +7,6 @@ use std::slice;
 
 use crate::ffi::cdm;
 use crate::util::cstr_from_str;
-
-use autocxx::subclass::{subclass, CppSubclassSelfOwned};
-use log::{debug, error};
 
 // To change this, also change ContentDecryptionModule_NN and Host_NN.
 const CDM_INTERFACE: c_int = 10;
