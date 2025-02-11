@@ -16,12 +16,12 @@ extern "C" fn InitializeCdmModule_4() {
     env_logger::builder()
         .filter_level(log::LevelFilter::Debug)
         .init();
-    debug!("InitializeCdmModule()")
+    debug!("InitializeCdmModule()");
 }
 
 #[no_mangle]
 extern "C" fn DeinitializeCdmModule() {
-    debug!("DeinitializeCdmModule()")
+    debug!("DeinitializeCdmModule()");
 }
 
 const WV_KEY_SYSTEM: &[u8] = b"com.widevine.alpha";
