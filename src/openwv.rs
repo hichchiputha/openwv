@@ -108,8 +108,14 @@ extern "C" fn CreateCdmInstance(
         Some(p) => unsafe { Pin::new_unchecked(p) },
     };
 
+    let Some(device) = DEVICE.get() else {
+        error!("Called CreateCdmInstance() before initializing module");
+        return null_mut();
+    };
+
     let openwv = OpenWv::new_self_owned(OpenWv {
         host,
+        device,
         allow_persistent_state: false,
         cpp_peer: Default::default(),
     });
@@ -135,6 +141,7 @@ use crate::ffi;
 #[subclass(self_owned)]
 pub struct OpenWv {
     host: Pin<&'static mut cdm::Host_10>,
+    device: &'static wvd_file::WidevineDevice,
     allow_persistent_state: bool,
 }
 
