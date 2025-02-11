@@ -17,3 +17,10 @@ include_cpp! {
 mod video_widevine {
     include!(concat!(env!("OUT_DIR"), "/video_widevine.rs"));
 }
+
+pub trait CdmError {
+    fn cdm_exception(&self) -> ffi::cdm::Exception;
+    fn cdm_system_code(&self) -> u32 {
+        0
+    }
+}

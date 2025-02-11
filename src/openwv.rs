@@ -2,13 +2,14 @@ use autocxx::subclass::{subclass, CppSubclassSelfOwned};
 use log::{debug, error, info, warn};
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
-use std::ptr::null_mut;
+use std::ptr::{null, null_mut};
 use std::slice;
 use std::sync::OnceLock;
 
 use crate::ffi::cdm;
 use crate::util::cstr_from_str;
 use crate::wvd_file;
+use crate::CdmError;
 
 // To change this, also change ContentDecryptionModule_NN and Host_NN.
 const CDM_INTERFACE: c_int = 10;
@@ -154,6 +155,29 @@ impl OpenWv {
                 0,
                 msg.as_ptr(),
                 msg.count_bytes() as _,
+            );
+        }
+    }
+
+    fn throw(&mut self, promise_id: u32, e: &(impl std::error::Error + CdmError)) {
+        warn!("Returning API error: {}", e);
+
+        // Need to keep this alive until after the FFI call, or else we'll be
+        // passing a dangling pointer.
+        let msg_str = std::ffi::CString::new(e.to_string()).ok();
+
+        let (msg_ptr, msg_size) = match &msg_str {
+            None => (null(), 0),
+            Some(s) => (s.as_ptr(), s.count_bytes()),
+        };
+
+        unsafe {
+            self.host.as_mut().OnRejectPromise(
+                promise_id,
+                e.cdm_exception(),
+                e.cdm_system_code(),
+                msg_ptr,
+                msg_size as _,
             );
         }
     }

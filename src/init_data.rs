@@ -6,6 +6,7 @@ use uuid::{uuid, Uuid};
 use crate::ffi::cdm::InitDataType;
 use crate::video_widevine::license_request::{content_identification, ContentIdentification};
 use crate::video_widevine::LicenseType;
+use crate::CdmError;
 
 // From https://dashif.org/identifiers/content_protection/
 const WIDEVINE_SYSTEMID: Uuid = uuid!("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed");
@@ -21,6 +22,17 @@ pub enum InitDataError {
     ShortData,
     #[error("box too large to parse")]
     Overflow(#[from] std::num::TryFromIntError),
+}
+
+impl CdmError for InitDataError {
+    fn cdm_exception(&self) -> crate::ffi::cdm::Exception {
+        use crate::ffi::cdm::Exception::*;
+
+        match self {
+            InitDataError::UnsupportedType => kExceptionNotSupportedError,
+            _ => kExceptionTypeError,
+        }
+    }
 }
 
 pub fn init_data_to_content_id(
