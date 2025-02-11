@@ -147,4 +147,9 @@ impl Session {
             metric_data: vec![],
         })
     }
+
+    pub fn update(&mut self, response_raw: &[u8]) -> Result<(), LicenseError> {
+        let response = video_widevine::SignedMessage::decode(response_raw)?;
+        todo!()
+    }
 }

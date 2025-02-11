@@ -186,6 +186,15 @@ impl OpenWv {
             );
         }
     }
+
+    fn lookup_session(
+        &mut self,
+        id: *const c_char,
+        id_len: u32,
+    ) -> Result<&mut Session, BadSessionId> {
+        let session_id = unsafe { SessionId::from_cxx(id, id_len) }.or(Err(BadSessionId))?;
+        self.sessions.get_mut(&session_id).ok_or(BadSessionId)
+    }
 }
 
 impl cdm::ContentDecryptionModule_10_methods for OpenWv {
@@ -297,7 +306,18 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         response_size: u32,
     ) {
         debug!("OpenWv({:p}).UpdateSession()", self);
-        todo!()
+        let sess = match self.lookup_session(session_id, session_id_size) {
+            Ok(s) => s,
+            Err(e) => {
+                self.throw(promise_id, &e);
+                return;
+            }
+        };
+
+        let response_raw = unsafe { slice::from_raw_parts(response, response_size as _) };
+        if let Err(e) = sess.update(response_raw) {
+            self.throw(promise_id, &e);
+        }
     }
 
     unsafe fn CloseSession(
