@@ -20,7 +20,7 @@ rand = "0.9"
 uuid = "1"
 
 [build-dependencies]
-autocxx-build = { git = "https://github.com/tchebb/autocxx.git", branch = "reexport-build-types" }
+autocxx-build = { git = "https://github.com/google/autocxx.git" }
 prost-build = "0.13"
 thiserror = "2"
 

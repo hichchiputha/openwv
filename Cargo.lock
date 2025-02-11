@@ -131,7 +131,7 @@ dependencies = [
 [[package]]
 name = "autocxx-build"
 version = "0.27.1"
-source = "git+https://github.com/tchebb/autocxx.git?branch=reexport-build-types#4b7196d27e0f039e55f79b3fa1fd9830e6af7397"
+source = "git+https://github.com/google/autocxx.git#0503f71a783a93a9bcf1ff227db4c64cefcde2dc"
 dependencies = [
  "autocxx-engine",
  "env_logger 0.9.3",
@@ -142,11 +142,11 @@ dependencies = [
 [[package]]
 name = "autocxx-engine"
 version = "0.27.1"
-source = "git+https://github.com/tchebb/autocxx.git?branch=reexport-build-types#4b7196d27e0f039e55f79b3fa1fd9830e6af7397"
+source = "git+https://github.com/google/autocxx.git#0503f71a783a93a9bcf1ff227db4c64cefcde2dc"
 dependencies = [
  "aquamarine",
  "autocxx-bindgen",
- "autocxx-parser 0.27.1 (git+https://github.com/tchebb/autocxx.git?branch=reexport-build-types)",
+ "autocxx-parser 0.27.1 (git+https://github.com/google/autocxx.git)",
  "cc",
  "cxx-gen",
  "indexmap 1.9.3",
@@ -201,7 +201,7 @@ dependencies = [
 [[package]]
 name = "autocxx-parser"
 version = "0.27.1"
-source = "git+https://github.com/tchebb/autocxx.git?branch=reexport-build-types#4b7196d27e0f039e55f79b3fa1fd9830e6af7397"
+source = "git+https://github.com/google/autocxx.git#0503f71a783a93a9bcf1ff227db4c64cefcde2dc"
 dependencies = [
  "indexmap 1.9.3",
  "itertools 0.10.5",
