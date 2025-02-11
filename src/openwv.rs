@@ -1,15 +1,26 @@
 use autocxx::subclass::{subclass, CppSubclassSelfOwned};
-use log::{debug, error};
+use log::{debug, error, info, warn};
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::null_mut;
 use std::slice;
+use std::sync::OnceLock;
 
 use crate::ffi::cdm;
 use crate::util::cstr_from_str;
+use crate::wvd_file;
 
 // To change this, also change ContentDecryptionModule_NN and Host_NN.
 const CDM_INTERFACE: c_int = 10;
+
+// Holds the private key and client ID we use for license requests. Loaded once
+// during InitializeCdmModule() and referenced by all subsequently-created
+// Session structs.
+static DEVICE: OnceLock<wvd_file::WidevineDevice> = OnceLock::new();
+
+// Ideally, we'd read this dynamically from the filesystem, but currently we
+// embed it because the Firefox GMP sandbox forbids filesystem reads.
+const EMBEDDED_WVD: &[u8] = include_bytes!("embedded.wvd");
 
 #[no_mangle]
 extern "C" fn InitializeCdmModule_4() {
@@ -17,6 +28,18 @@ extern "C" fn InitializeCdmModule_4() {
         .filter_level(log::LevelFilter::Debug)
         .init();
     debug!("InitializeCdmModule()");
+
+    let mut embedded_wvd = std::io::Cursor::new(EMBEDDED_WVD);
+    match wvd_file::parse_wvd(&mut embedded_wvd) {
+        Ok(dev) => {
+            if DEVICE.set(dev).is_err() {
+                warn!("Tried to initialize CDM twice!");
+            } else {
+                info!("Successfully loaded embedded device!");
+            }
+        }
+        Err(e) => error!("Could not parse embedded device: {}", e),
+    }
 }
 
 #[no_mangle]

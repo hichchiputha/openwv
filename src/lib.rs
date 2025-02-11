@@ -2,8 +2,9 @@ use autocxx::include_cpp;
 
 mod util;
 
-mod openwv;
 mod init_data;
+mod openwv;
+mod wvd_file;
 
 use openwv::OpenWv;
 include_cpp! {
