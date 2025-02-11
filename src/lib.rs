@@ -4,6 +4,7 @@ mod util;
 
 mod init_data;
 mod openwv;
+mod session;
 mod wvd_file;
 
 use openwv::OpenWv;

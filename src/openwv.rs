@@ -1,12 +1,16 @@
 use autocxx::subclass::{subclass, CppSubclassSelfOwned};
 use log::{debug, error, info, warn};
+use prost::Message;
+use std::collections::HashMap;
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::{null, null_mut};
 use std::slice;
 use std::sync::OnceLock;
+use thiserror::Error;
 
 use crate::ffi::cdm;
+use crate::session::{Session, SessionId};
 use crate::util::cstr_from_str;
 use crate::wvd_file;
 use crate::CdmError;
@@ -116,6 +120,7 @@ extern "C" fn CreateCdmInstance(
 
     let openwv = OpenWv::new_self_owned(OpenWv {
         host,
+        sessions: HashMap::new(),
         device,
         allow_persistent_state: false,
         cpp_peer: Default::default(),
@@ -142,8 +147,18 @@ use crate::ffi;
 #[subclass(self_owned)]
 pub struct OpenWv {
     host: Pin<&'static mut cdm::Host_10>,
+    sessions: HashMap<SessionId, Session>,
     device: &'static wvd_file::WidevineDevice,
     allow_persistent_state: bool,
+}
+
+#[derive(Error, Debug)]
+#[error("non-existent session ID")]
+struct BadSessionId;
+impl CdmError for BadSessionId {
+    fn cdm_exception(&self) -> cdm::Exception {
+        cdm::Exception::kExceptionInvalidStateError
+    }
 }
 
 impl OpenWv {
@@ -225,7 +240,45 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         init_data_size: u32,
     ) {
         debug!("OpenWv({:p}).CreateSessionAndGenerateRequest()", self);
-        todo!()
+        if session_type == cdm::SessionType::kPersistentLicense && !self.allow_persistent_state {
+            // TODO: error details, better error framework
+            self.reject(
+                promise_id,
+                cdm::Exception::kExceptionNotSupportedError,
+                c"persistent state not allowed",
+            );
+            return;
+        }
+
+        let sess = Session::new(self.device);
+
+        let init_data_raw = unsafe { slice::from_raw_parts(init_data, init_data_size as _) };
+        match sess.generate_request(init_data_type, init_data_raw) {
+            Ok(request) => {
+                let session_id = sess.id();
+
+                self.sessions.insert(session_id, sess);
+                info!("Registered new session {}", session_id);
+
+                let request_raw = request.encode_to_vec();
+                let (id_ptr, id_len) = session_id.as_cxx();
+
+                unsafe {
+                    self.host
+                        .as_mut()
+                        .OnResolveNewSessionPromise(promise_id, id_ptr, id_len);
+
+                    self.host.as_mut().OnSessionMessage(
+                        id_ptr,
+                        id_len,
+                        cdm::MessageType::kLicenseRequest,
+                        request_raw.as_ptr() as _,
+                        request_raw.len() as _,
+                    );
+                }
+            }
+            Err(e) => self.throw(promise_id, &e),
+        }
     }
 
     unsafe fn LoadSession(
