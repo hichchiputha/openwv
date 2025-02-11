@@ -7,10 +7,9 @@ use std::pin::Pin;
 use std::ptr::{null, null_mut};
 use std::slice;
 use std::sync::OnceLock;
-use thiserror::Error;
 
 use crate::ffi::cdm;
-use crate::session::{Session, SessionId};
+use crate::session::{BadSessionId, Session, SessionId};
 use crate::util::cstr_from_str;
 use crate::wvd_file;
 use crate::CdmError;
@@ -150,15 +149,6 @@ pub struct OpenWv {
     sessions: HashMap<SessionId, Session>,
     device: &'static wvd_file::WidevineDevice,
     allow_persistent_state: bool,
-}
-
-#[derive(Error, Debug)]
-#[error("non-existent session ID")]
-struct BadSessionId;
-impl CdmError for BadSessionId {
-    fn cdm_exception(&self) -> cdm::Exception {
-        cdm::Exception::kExceptionInvalidStateError
-    }
 }
 
 impl OpenWv {

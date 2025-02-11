@@ -1,43 +1,75 @@
 use prost::Message;
+use rand::Rng;
 use ring::rand::SystemRandom;
+use std::ffi::c_char;
 use std::fmt::Display;
 use thiserror::Error;
 
-use crate::ffi::cdm::InitDataType;
+use crate::ffi::cdm::{Exception, InitDataType};
 use crate::init_data::{init_data_to_content_id, InitDataError};
 use crate::util::now;
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;
 use crate::CdmError;
 
+/// Represents a session ID. We want this both to be copyable (so ideally
+/// entirely stack-allocated) and passable to C++ as a NUL-terminated string,
+/// which is why we do all this array to C string munging manually.
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
-pub struct SessionId([u8; 16]);
+pub struct SessionId([u8; Self::LEN + 1]);
 
 impl SessionId {
+    const LEN: usize = 32;
+
     fn generate() -> SessionId {
-        SessionId(rand::random())
+        // Technically, we can be any C string, but Google uses 32 characters
+        // of uppercase hex.
+        const CHARS: &[u8] = b"0123456789ABCDEF";
+
+        let dist = rand::distr::slice::Choose::new(CHARS).unwrap();
+        let mut rng = rand::rng();
+
+        let mut id = [0u8; Self::LEN + 1];
+
+        // Leave last element unfilled as NUL terminator
+        for i in id[..Self::LEN].iter_mut() {
+            *i = *rng.sample(dist);
+        }
+
+        SessionId(id)
     }
 
-    pub unsafe fn from_cxx(
-        ptr: *const std::ffi::c_char,
-        size: u32,
-    ) -> Result<SessionId, std::array::TryFromSliceError> {
+    pub unsafe fn from_cxx(ptr: *const c_char, size: u32) -> Result<SessionId, BadSessionId> {
         let slice =
             unsafe { std::slice::from_raw_parts(ptr as *const std::ffi::c_uchar, size as _) };
-        Ok(SessionId(slice.try_into()?))
+
+        if slice.len() != Self::LEN {
+            return Err(BadSessionId);
+        }
+
+        let mut id = [0u8; Self::LEN + 1];
+        id[..Self::LEN].copy_from_slice(slice);
+
+        Ok(SessionId(id))
     }
 
-    pub unsafe fn as_cxx(&self) -> (*const std::ffi::c_char, u32) {
-        (self.0.as_ptr() as _, self.0.len() as _)
+    pub unsafe fn as_cxx(&self) -> (*const c_char, u32) {
+        (self.0.as_ptr() as _, Self::LEN as _)
     }
 }
 
 impl Display for SessionId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for b in self.0 {
-            write!(f, "{:02X}", b)?
-        }
-        Ok(())
+        write!(f, "{}", self.0[..Self::LEN].escape_ascii())
+    }
+}
+
+#[derive(Error, Debug)]
+#[error("invalid or non-existent session ID")]
+pub struct BadSessionId;
+impl CdmError for BadSessionId {
+    fn cdm_exception(&self) -> Exception {
+        Exception::kExceptionInvalidStateError
     }
 }
 
