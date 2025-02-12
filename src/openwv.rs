@@ -9,6 +9,7 @@ use std::sync::OnceLock;
 use crate::decrypt::{decrypt_buf, DecryptError};
 use crate::ffi::cdm;
 use crate::keys::ContentKey;
+use crate::server_certificate::{parse_server_certificate, ServerCertificate};
 use crate::session::{Session, SessionStore};
 use crate::util::{cstr_from_str, slice_from_c};
 use crate::wvd_file;
@@ -122,6 +123,7 @@ extern "C" fn CreateCdmInstance(
         sessions: SessionStore::new(),
         device,
         keys: vec![],
+        server_cert: None,
         allow_persistent_state: false,
         cpp_peer: Default::default(),
     });
@@ -150,6 +152,7 @@ pub struct OpenWv {
     sessions: SessionStore,
     keys: Vec<ContentKey>,
     device: &'static wvd_file::WidevineDevice,
+    server_cert: Option<ServerCertificate>,
     allow_persistent_state: bool,
 }
 
@@ -212,17 +215,20 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
     unsafe fn SetServerCertificate(
         &mut self,
         promise_id: u32,
-        _server_certificate_data: *const u8,
-        _server_certificate_data_size: u32,
+        server_certificate_data: *const u8,
+        server_certificate_data_size: u32,
     ) {
         debug!("OpenWv({:p}).SetServerCertificate()", self);
 
-        // TODO: Implement
-        self.reject(
-            promise_id,
-            cdm::Exception::kExceptionNotSupportedError,
-            c"server certificate not yet implemented",
-        );
+        let server_certificate =
+            unsafe { slice_from_c(server_certificate_data, server_certificate_data_size) };
+        match parse_server_certificate(server_certificate) {
+            Ok(cert) => {
+                self.server_cert = Some(cert);
+                self.host.as_mut().OnResolvePromise(promise_id);
+            }
+            Err(e) => self.throw(promise_id, &e),
+        }
     }
 
     unsafe fn CreateSessionAndGenerateRequest(
@@ -247,7 +253,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         let mut sess = Session::new(self.device);
 
         let init_data_raw = unsafe { slice_from_c(init_data, init_data_size) }.unwrap();
-        match sess.generate_request(init_data_type, init_data_raw) {
+        match sess.generate_request(init_data_type, init_data_raw, self.server_cert.as_ref()) {
             Ok(request) => {
                 let session_id = sess.id();
 

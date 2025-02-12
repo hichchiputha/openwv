@@ -13,6 +13,7 @@ use thiserror::Error;
 use crate::ffi::cdm;
 use crate::init_data::{init_data_to_content_id, InitDataError};
 use crate::keys::ContentKey;
+use crate::server_certificate::{encrypt_client_id, ServerCertificate};
 use crate::util::{now, slice_from_c};
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;
@@ -132,20 +133,26 @@ impl Session {
         &mut self,
         init_data_type: cdm::InitDataType,
         init_data: &[u8],
+        server_certificate: Option<&ServerCertificate>,
     ) -> Result<video_widevine::SignedMessage, InitDataError> {
         let key_control_nonce: u32 = rand::random();
 
-        let req = video_widevine::LicenseRequest {
-            client_id: Some(self.device.client_id.clone()),
+        let mut req = video_widevine::LicenseRequest {
             content_id: Some(init_data_to_content_id(init_data_type, init_data)?),
             r#type: Some(video_widevine::license_request::RequestType::New as i32),
             request_time: Some(now()),
-            key_control_nonce_deprecated: None,
             protocol_version: Some(video_widevine::ProtocolVersion::Version21 as i32),
             key_control_nonce: Some(key_control_nonce),
-            encrypted_client_id: None,
-            sub_session_data: vec![],
+            ..Default::default()
         };
+
+        match server_certificate {
+            None => req.client_id = Some(self.device.client_id.clone()),
+            Some(cert) => {
+                req.encrypted_client_id = Some(encrypt_client_id(cert, &self.device.client_id))
+            }
+        }
+
         let req_raw = req.encode_to_vec();
 
         let signing_key = rsa::pss::SigningKey::<sha1::Sha1>::new(self.device.private_key.clone());

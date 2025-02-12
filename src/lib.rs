@@ -6,6 +6,7 @@ mod decrypt;
 mod init_data;
 mod keys;
 mod openwv;
+mod server_certificate;
 mod session;
 mod wvd_file;
 
