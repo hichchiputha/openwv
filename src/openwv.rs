@@ -249,7 +249,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
             return;
         }
 
-        let sess = Session::new(self.device);
+        let mut sess = Session::new(self.device);
 
         let init_data_raw = unsafe { slice::from_raw_parts(init_data, init_data_size as _) };
         match sess.generate_request(init_data_type, init_data_raw) {

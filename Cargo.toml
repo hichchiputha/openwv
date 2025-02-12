@@ -18,10 +18,16 @@ env_logger = "0.11"
 byteorder = "1"
 rand = "0.9"
 uuid = "1"
+
+### RustCrypto crates
 # TODO: Get rid of this once RustCrypto migrates to rand 0.9
 rand8 = { package = "rand", version = "0.8" }
 rsa = "0.9"
 sha1 = { version = "0.10", features = ["oid"] }
+sha2 = "0.10"
+cmac = "0.7"
+hmac = "0.12"
+aes = "0.8"
 
 [build-dependencies]
 autocxx-build = { git = "https://github.com/google/autocxx.git" }
