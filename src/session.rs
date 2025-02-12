@@ -178,9 +178,7 @@ impl Session {
             return Err(LicenseError::WrongType);
         }
 
-        let Some(wrapped_key) = response.session_key else {
-            return Err(LicenseError::NoSessionKey);
-        };
+        let wrapped_key = response.session_key.ok_or(LicenseError::NoSessionKey)?;
 
         let padding = Oaep::new::<sha1::Sha1>();
         let session_key = self.device.private_key.decrypt(padding, &wrapped_key)?;
@@ -189,19 +187,14 @@ impl Session {
             &session_key,
         )?;
 
-        let Some(license_raw) = response.msg else {
-            return Err(LicenseError::NoLicense);
-        };
+        let license_raw = response.msg.ok_or(LicenseError::NoLicense)?;
 
         let mut digester =
             hmac::Hmac::<sha2::Sha256>::new_from_slice(&session_keys.mac_server).unwrap();
         digester.update(&license_raw);
         let expected_sig = digester.finalize().into_bytes();
 
-        let Some(actual_sig) = response.signature else {
-            return Err(LicenseError::NoSignature);
-        };
-
+        let actual_sig = response.signature.ok_or(LicenseError::NoSignature)?;
         if actual_sig != expected_sig.as_slice() {
             return Err(LicenseError::BadSignature);
         }
