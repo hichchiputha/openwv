@@ -318,6 +318,8 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         if let Err(e) = sess.update(response_raw) {
             self.throw(promise_id, &e);
         }
+
+        self.host.as_mut().OnResolvePromise(promise_id);
     }
 
     unsafe fn CloseSession(

@@ -28,6 +28,7 @@ sha2 = "0.10"
 cmac = "0.7"
 hmac = "0.12"
 aes = "0.8"
+cbc = { version = "0.1", features = ["std"] }
 
 [build-dependencies]
 autocxx-build = { git = "https://github.com/google/autocxx.git" }

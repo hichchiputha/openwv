@@ -1,5 +1,7 @@
+use aes::cipher::{BlockDecryptMut, KeyIvInit};
 use byteorder::{ByteOrder, BE};
 use cmac::Mac;
+use log::info;
 use prost::Message;
 use rand::Rng;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
@@ -84,9 +86,9 @@ pub enum LicenseError {
     #[error("not a license message")]
     WrongType,
     #[error("no key in SignedMessage")]
-    NoKey,
+    NoSessionKey,
     #[error("couldn't decrypt key")]
-    BadKey(#[from] rsa::Error),
+    BadSessionKey(#[from] rsa::Error),
     #[error("couldn't derive session keys")]
     KeyDerivationFailure(#[from] SessionKeysError),
     #[error("no signature for SignedMessage")]
@@ -95,6 +97,8 @@ pub enum LicenseError {
     BadSignature,
     #[error("no License message in proto")]
     NoLicense,
+    #[error("bad padding in content key")]
+    BadContentKey(#[from] aes::cipher::block_padding::UnpadError),
 }
 
 impl CdmError for LicenseError {
@@ -103,10 +107,33 @@ impl CdmError for LicenseError {
     }
 }
 
+pub struct ContentKey {
+    id: Vec<u8>,
+    data: Vec<u8>,
+    key_type: Option<i32>,
+}
+
+impl Display for ContentKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for b in &self.id {
+            write!(f, "{:02x}", b)?;
+        }
+        write!(f, ":")?;
+        for b in &self.data {
+            write!(f, "{:02x}", b)?;
+        }
+        if let Some(t) = self.key_type {
+            write!(f, " [{}]", t)?;
+        }
+        Ok(())
+    }
+}
+
 pub struct Session {
     id: SessionId,
     device: &'static WidevineDevice,
     keys: KeyState,
+    content_keys: Vec<ContentKey>,
 }
 
 impl Session {
@@ -115,6 +142,7 @@ impl Session {
             id: SessionId::generate(),
             device,
             keys: KeyState::NotSet,
+            content_keys: vec![],
         }
     }
 
@@ -168,7 +196,7 @@ impl Session {
         }
 
         let Some(wrapped_key) = response.session_key else {
-            return Err(LicenseError::NoKey);
+            return Err(LicenseError::NoSessionKey);
         };
 
         let padding = Oaep::new::<sha1::Sha1>();
@@ -191,9 +219,36 @@ impl Session {
             return Err(LicenseError::BadSignature);
         }
 
-        let license = video_widevine::License::decode(license_raw.as_slice());
+        let license = video_widevine::License::decode(license_raw.as_slice())?;
 
-        todo!()
+        self.load_keys(license)
+    }
+
+    fn load_keys(&mut self, license: video_widevine::License) -> Result<(), LicenseError> {
+        let keys = self.keys.unwrap_keys();
+
+        for key in license.key {
+            let (Some(iv), Some(mut data)) = (key.iv, key.key) else {
+                continue;
+            };
+
+            let decryptor =
+                cbc::Decryptor::<aes::Aes128>::new_from_slices(&keys.encryption, &iv).unwrap();
+            let new_size = decryptor
+                .decrypt_padded_mut::<aes::cipher::block_padding::Pkcs7>(data.as_mut_slice())?
+                .len();
+            data.truncate(new_size);
+
+            let new_key = ContentKey {
+                id: key.id.unwrap_or_default(),
+                data,
+                key_type: key.r#type,
+            };
+
+            info!("Loaded content key: {}", &new_key);
+            self.content_keys.push(new_key);
+        }
+        Ok(())
     }
 }
 
@@ -212,6 +267,7 @@ pub enum SessionKeysError {
 pub struct SessionKeys {
     encryption: [u8; 16],
     mac_server: [u8; 32],
+    #[allow(dead_code)]
     mac_client: [u8; 32],
 }
 
@@ -259,14 +315,18 @@ impl KeyState {
                     mac_client,
                 });
 
-                if let KeyState::Ready(keys) = self {
-                    Ok(keys)
-                } else {
-                    panic!("impossible enum value")
-                }
+                Ok(self.unwrap_keys())
             }
             KeyState::NotSet => Err(SessionKeysError::NotInitialized),
             KeyState::Ready(_) => Err(SessionKeysError::AlreadyInitialized),
+        }
+    }
+
+    fn unwrap_keys(&self) -> &SessionKeys {
+        if let KeyState::Ready(keys) = self {
+            &keys
+        } else {
+            panic!("impossible enum value")
         }
     }
 }
