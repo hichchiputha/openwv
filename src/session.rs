@@ -106,8 +106,8 @@ pub enum LicenseError {
 }
 
 impl CdmError for LicenseError {
-    fn cdm_exception(&self) -> crate::ffi::cdm::Exception {
-        crate::ffi::cdm::Exception::kExceptionTypeError
+    fn cdm_exception(&self) -> cdm::Exception {
+        cdm::Exception::kExceptionTypeError
     }
 }
 
