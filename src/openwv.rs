@@ -1,11 +1,12 @@
 use autocxx::subclass::{subclass, CppSubclassSelfOwned};
-use log::{debug, error, info, warn};
+use log::{debug, error, info, trace, warn};
 use prost::Message;
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::{null, null_mut};
 use std::sync::OnceLock;
 
+use crate::decrypt::{decrypt_buf, DecryptError};
 use crate::ffi::cdm;
 use crate::keys::ContentKey;
 use crate::session::{Session, SessionStore};
@@ -379,11 +380,55 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
 
     unsafe fn Decrypt(
         &mut self,
-        encrypted_buffer: &cdm::InputBuffer_2,
-        decrypted_buffer: *mut cdm::DecryptedBlock,
+        in_buf: &cdm::InputBuffer_2,
+        out_raw: *mut cdm::DecryptedBlock,
     ) -> cdm::Status {
-        debug!("OpenWv({:p}).Decrypt()", self);
-        todo!()
+        trace!("OpenWv({:p}).Decrypt()", self);
+
+        let mut out = match unsafe { out_raw.as_mut() } {
+            None => return cdm::Status::kSuccess,
+            Some(p) => unsafe { Pin::new_unchecked(p) },
+        };
+
+        let data = unsafe { slice_from_c(in_buf.data, in_buf.data_size) }.unwrap();
+
+        let key_id = unsafe { slice_from_c(in_buf.key_id, in_buf.key_id_size) };
+        let iv = unsafe { slice_from_c(in_buf.iv, in_buf.iv_size) };
+        let subsamples = unsafe { slice_from_c(in_buf.subsamples, in_buf.num_subsamples) };
+
+        let key = key_id.and_then(|id| self.keys.iter().find(|&k| k.id == id));
+
+        match decrypt_buf(key, iv, data, in_buf.encryption_scheme, subsamples) {
+            Ok(decrypted) => {
+                let our_size: u32 = decrypted.len().try_into().unwrap();
+
+                let out_buf_raw = self.host.as_mut().Allocate(our_size);
+                let mut out_buf = match unsafe { out_buf_raw.as_mut() } {
+                    None => return cdm::Status::kDecryptError,
+                    Some(p) => unsafe { Pin::new_unchecked(p) },
+                };
+
+                let out_data = unsafe {
+                    std::slice::from_raw_parts_mut(
+                        out_buf.as_mut().Data(),
+                        out_buf.as_mut().Capacity() as _,
+                    )
+                };
+
+                out_data[..decrypted.len()].copy_from_slice(&decrypted);
+                out_buf.as_mut().SetSize(our_size);
+
+                out.as_mut().SetDecryptedBuffer(out_buf_raw);
+                out.as_mut().SetTimestamp(in_buf.timestamp);
+
+                cdm::Status::kSuccess
+            }
+            Err(DecryptError::NoKeyIv) => cdm::Status::kNoKey,
+            Err(e) => {
+                warn!("Decryption error: {}", e);
+                cdm::Status::kDecryptError
+            }
+        }
     }
 
     fn InitializeAudioDecoder(

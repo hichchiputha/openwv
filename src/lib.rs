@@ -2,6 +2,7 @@ use autocxx::include_cpp;
 
 mod util;
 
+mod decrypt;
 mod init_data;
 mod keys;
 mod openwv;
@@ -14,8 +15,21 @@ include_cpp! {
     safety!(unsafe)
     subclass!("cdm::ContentDecryptionModule_10", OpenWv)
     generate!("cdm::Host_10")
+    generate!("cdm::Buffer")
+    generate!("cdm::DecryptedBlock")
     generate_pod!("cdm::KeyInformation")
+    generate_pod!("cdm::InputBuffer_2")
+    generate_pod!("cdm::SubsampleEntry")
 }
+
+// These are all just plain enums, totally safe to copy.
+impl Copy for ffi::cdm::Status {}
+impl Copy for ffi::cdm::Exception {}
+impl Copy for ffi::cdm::EncryptionScheme {}
+impl Copy for ffi::cdm::KeyStatus {}
+impl Copy for ffi::cdm::InitDataType {}
+impl Copy for ffi::cdm::SessionType {}
+impl Copy for ffi::cdm::MessageType {}
 
 mod video_widevine {
     include!(concat!(env!("OUT_DIR"), "/video_widevine.rs"));
