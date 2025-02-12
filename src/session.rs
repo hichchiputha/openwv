@@ -83,6 +83,8 @@ impl CdmError for BadSessionId {
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum LicenseError {
+    #[error("no stored request")]
+    NoRequest,
     #[error("bad protobuf serialization")]
     BadProto(#[from] prost::DecodeError),
     #[error("not a license message")]
@@ -90,9 +92,9 @@ pub enum LicenseError {
     #[error("no key in SignedMessage")]
     NoSessionKey,
     #[error("couldn't decrypt key")]
-    BadSessionKey(#[from] rsa::Error),
-    #[error("couldn't derive session keys")]
-    KeyDerivationFailure(#[from] SessionKeysError),
+    BadSessionKeyCrypto(#[from] rsa::Error),
+    #[error("session key wrong length")]
+    BadSessionKeyLength(#[from] cmac::digest::InvalidLength),
     #[error("no signature for SignedMessage")]
     NoSignature,
     #[error("could not verify signature")]
@@ -112,7 +114,7 @@ impl CdmError for LicenseError {
 pub struct Session {
     id: SessionId,
     device: &'static WidevineDevice,
-    keys: KeyState,
+    request_msg: Option<Vec<u8>>,
 }
 
 impl Session {
@@ -120,7 +122,7 @@ impl Session {
         Session {
             id: SessionId::generate(),
             device,
-            keys: KeyState::NotSet,
+            request_msg: None,
         }
     }
 
@@ -154,7 +156,7 @@ impl Session {
             .sign_with_rng(&mut rand8::thread_rng(), &req_raw)
             .to_vec();
 
-        self.keys = KeyState::Initializing(req_raw.clone());
+        self.request_msg = Some(req_raw.clone());
 
         Ok(video_widevine::SignedMessage {
             r#type: Some(video_widevine::signed_message::MessageType::LicenseRequest as i32),
@@ -167,7 +169,7 @@ impl Session {
     }
 
     pub fn load_license_keys(
-        &mut self,
+        &self,
         response_raw: &[u8],
         keys: &mut Vec<ContentKey>,
     ) -> Result<bool, LicenseError> {
@@ -183,7 +185,10 @@ impl Session {
 
         let padding = Oaep::new::<sha1::Sha1>();
         let session_key = self.device.private_key.decrypt(padding, &wrapped_key)?;
-        let session_keys = self.keys.finish_initialization(&session_key)?;
+        let session_keys = derive_session_keys(
+            self.request_msg.as_ref().ok_or(LicenseError::NoRequest)?,
+            &session_key,
+        )?;
 
         let Some(license_raw) = response.msg else {
             return Err(LicenseError::NoLicense);
@@ -233,17 +238,6 @@ impl Session {
     }
 }
 
-#[derive(Error, Debug)]
-#[non_exhaustive]
-pub enum SessionKeysError {
-    #[error("no session context present")]
-    NotInitialized,
-    #[error("session keys already initialized")]
-    AlreadyInitialized,
-    #[error("wrong key size!")]
-    WrongKeySize(#[from] cmac::digest::InvalidLength),
-}
-
 #[derive(Debug)]
 pub struct SessionKeys {
     encryption: [u8; 16],
@@ -252,64 +246,42 @@ pub struct SessionKeys {
     mac_client: [u8; 32],
 }
 
-#[derive(Debug)]
-pub enum KeyState {
-    NotSet,
-    Initializing(Vec<u8>),
-    Ready(SessionKeys),
-}
+fn derive_session_keys(
+    request_msg: &[u8],
+    session_key: &[u8],
+) -> Result<SessionKeys, cmac::digest::InvalidLength> {
+    let mut cmac = cmac::Cmac::<aes::Aes128>::new_from_slice(session_key)?;
 
-impl KeyState {
-    fn finish_initialization(&mut self, key: &[u8]) -> Result<&SessionKeys, SessionKeysError> {
-        match self {
-            KeyState::Initializing(request_msg) => {
-                let mut cmac = cmac::Cmac::<aes::Aes128>::new_from_slice(key)?;
+    let mut derive_key = |counter, label, key_size| {
+        cmac.update(&[counter]);
+        cmac.update(label);
+        cmac.update(&[0]);
+        cmac.update(&request_msg);
 
-                let mut derive_key = |counter, label, key_size| {
-                    cmac.update(&[counter]);
-                    cmac.update(label);
-                    cmac.update(&[0]);
-                    cmac.update(&request_msg);
+        let mut buf = [0u8; 4];
+        BE::write_u32(&mut buf, key_size);
+        cmac.update(&buf);
 
-                    let mut buf = [0u8; 4];
-                    BE::write_u32(&mut buf, key_size);
-                    cmac.update(&buf);
+        cmac.finalize_reset().into_bytes()
+    };
 
-                    cmac.finalize_reset().into_bytes()
-                };
+    let encryption = derive_key(1, b"ENCRYPTION", 128).into();
 
-                let encryption = derive_key(1, b"ENCRYPTION", 128).into();
+    const AUTH_LABEL: &[u8] = b"AUTHENTICATION";
 
-                const AUTH_LABEL: &[u8] = b"AUTHENTICATION";
+    let mut mac_server = [0u8; 32];
+    mac_server[..16].copy_from_slice(derive_key(1, AUTH_LABEL, 512).as_slice());
+    mac_server[16..].copy_from_slice(derive_key(2, AUTH_LABEL, 512).as_slice());
 
-                let mut mac_server = [0u8; 32];
-                mac_server[..16].copy_from_slice(derive_key(1, AUTH_LABEL, 512).as_slice());
-                mac_server[16..].copy_from_slice(derive_key(2, AUTH_LABEL, 512).as_slice());
+    let mut mac_client = [0u8; 32];
+    mac_client[..16].copy_from_slice(derive_key(3, AUTH_LABEL, 512).as_slice());
+    mac_client[16..].copy_from_slice(derive_key(4, AUTH_LABEL, 512).as_slice());
 
-                let mut mac_client = [0u8; 32];
-                mac_client[..16].copy_from_slice(derive_key(3, AUTH_LABEL, 512).as_slice());
-                mac_client[16..].copy_from_slice(derive_key(4, AUTH_LABEL, 512).as_slice());
-
-                *self = KeyState::Ready(SessionKeys {
-                    encryption,
-                    mac_server,
-                    mac_client,
-                });
-
-                Ok(self.unwrap_keys())
-            }
-            KeyState::NotSet => Err(SessionKeysError::NotInitialized),
-            KeyState::Ready(_) => Err(SessionKeysError::AlreadyInitialized),
-        }
-    }
-
-    fn unwrap_keys(&self) -> &SessionKeys {
-        if let KeyState::Ready(keys) = self {
-            &keys
-        } else {
-            panic!("impossible enum value")
-        }
-    }
+    Ok(SessionKeys {
+        encryption,
+        mac_server,
+        mac_client,
+    })
 }
 
 pub struct SessionStore(HashMap<SessionId, Session>);
