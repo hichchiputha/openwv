@@ -149,8 +149,7 @@ impl Session {
         };
         let req_raw = req.encode_to_vec();
 
-        let signing_key: rsa::pss::SigningKey<sha1::digest::core_api::CoreWrapper<sha1::Sha1Core>> =
-            rsa::pss::SigningKey::<sha1::Sha1>::new(self.device.private_key.clone());
+        let signing_key = rsa::pss::SigningKey::<sha1::Sha1>::new(self.device.private_key.clone());
         let signature = signing_key
             .sign_with_rng(&mut rand8::thread_rng(), &req_raw)
             .to_vec();
