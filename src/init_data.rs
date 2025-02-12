@@ -29,7 +29,7 @@ impl CdmError for InitDataError {
         use crate::ffi::cdm::Exception::*;
 
         match self {
-            InitDataError::UnsupportedType => kExceptionNotSupportedError,
+            Self::UnsupportedType => kExceptionNotSupportedError,
             _ => kExceptionTypeError,
         }
     }
