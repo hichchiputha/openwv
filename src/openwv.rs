@@ -161,7 +161,7 @@ impl OpenWv {
                 exception,
                 0,
                 msg.as_ptr(),
-                msg.count_bytes() as _,
+                msg.count_bytes().try_into().unwrap(),
             );
         }
     }
@@ -184,7 +184,7 @@ impl OpenWv {
                 e.cdm_exception(),
                 e.cdm_system_code(),
                 msg_ptr,
-                msg_size as _,
+                msg_size.try_into().unwrap(),
             );
         }
     }
