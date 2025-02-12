@@ -6,6 +6,7 @@ use prost::Message;
 use rand::Rng;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::Oaep;
+use std::collections::HashMap;
 use std::ffi::c_char;
 use std::fmt::Display;
 use thiserror::Error;
@@ -328,5 +329,21 @@ impl KeyState {
         } else {
             panic!("impossible enum value")
         }
+    }
+}
+
+pub struct SessionStore(HashMap<SessionId, Session>);
+impl SessionStore {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn add(&mut self, session: Session) {
+        self.0.insert(session.id, session);
+    }
+
+    pub fn lookup(&mut self, id: *const c_char, id_len: u32) -> Result<&mut Session, BadSessionId> {
+        let session_id = unsafe { SessionId::from_cxx(id, id_len) }.or(Err(BadSessionId))?;
+        self.0.get_mut(&session_id).ok_or(BadSessionId)
     }
 }

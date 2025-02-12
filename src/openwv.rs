@@ -1,7 +1,6 @@
 use autocxx::subclass::{subclass, CppSubclassSelfOwned};
 use log::{debug, error, info, warn};
 use prost::Message;
-use std::collections::HashMap;
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::{null, null_mut};
@@ -9,7 +8,7 @@ use std::slice;
 use std::sync::OnceLock;
 
 use crate::ffi::cdm;
-use crate::session::{BadSessionId, Session, SessionId};
+use crate::session::{Session, SessionStore};
 use crate::util::cstr_from_str;
 use crate::wvd_file;
 use crate::CdmError;
@@ -119,7 +118,7 @@ extern "C" fn CreateCdmInstance(
 
     let openwv = OpenWv::new_self_owned(OpenWv {
         host,
-        sessions: HashMap::new(),
+        sessions: SessionStore::new(),
         device,
         allow_persistent_state: false,
         cpp_peer: Default::default(),
@@ -146,7 +145,7 @@ use crate::ffi;
 #[subclass(self_owned)]
 pub struct OpenWv {
     host: Pin<&'static mut cdm::Host_10>,
-    sessions: HashMap<SessionId, Session>,
+    sessions: SessionStore,
     device: &'static wvd_file::WidevineDevice,
     allow_persistent_state: bool,
 }
@@ -185,15 +184,6 @@ impl OpenWv {
                 msg_size as _,
             );
         }
-    }
-
-    fn lookup_session(
-        &mut self,
-        id: *const c_char,
-        id_len: u32,
-    ) -> Result<&mut Session, BadSessionId> {
-        let session_id = unsafe { SessionId::from_cxx(id, id_len) }.or(Err(BadSessionId))?;
-        self.sessions.get_mut(&session_id).ok_or(BadSessionId)
     }
 }
 
@@ -256,7 +246,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
             Ok(request) => {
                 let session_id = sess.id();
 
-                self.sessions.insert(session_id, sess);
+                self.sessions.add(sess);
                 info!("Registered new session {}", session_id);
 
                 let request_raw = request.encode_to_vec();
@@ -306,7 +296,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         response_size: u32,
     ) {
         debug!("OpenWv({:p}).UpdateSession()", self);
-        let sess = match self.lookup_session(session_id, session_id_size) {
+        let sess = match self.sessions.lookup(session_id, session_id_size) {
             Ok(s) => s,
             Err(e) => {
                 self.throw(promise_id, &e);
