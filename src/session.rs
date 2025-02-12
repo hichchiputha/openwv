@@ -5,7 +5,6 @@ use log::info;
 use prost::Message;
 use rand::Rng;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
-use rsa::Oaep;
 use std::collections::HashMap;
 use std::ffi::c_char;
 use std::fmt::Display;
@@ -179,7 +178,7 @@ impl Session {
 
         let wrapped_key = response.session_key.ok_or(LicenseError::NoSessionKey)?;
 
-        let padding = Oaep::new::<sha1::Sha1>();
+        let padding = rsa::Oaep::new::<sha1::Sha1>();
         let session_key = self.device.private_key.decrypt(padding, &wrapped_key)?;
         let session_keys = derive_session_keys(
             self.request_msg.as_ref().ok_or(LicenseError::NoRequest)?,
