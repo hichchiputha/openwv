@@ -308,14 +308,17 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         };
 
         let response_raw = unsafe { slice_from_c(response, response_size as _) }.unwrap();
-        if let Err(e) = sess.load_license_keys(response_raw, &mut self.keys) {
-            self.throw(promise_id, &e);
-            return;
-        }
+        let new_keys = match sess.load_license_keys(response_raw, &mut self.keys) {
+            Err(e) => {
+                self.throw(promise_id, &e);
+                return;
+            }
+            Ok(b) => b,
+        };
 
         self.host.as_mut().OnResolvePromise(promise_id);
 
-        if !self.keys.is_empty() {
+        if new_keys {
             // Build an array of KeyInformation structs that point into keys.
             let key_infos: Vec<cdm::KeyInformation> = self
                 .keys
@@ -332,7 +335,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
                 self.host.as_mut().OnSessionKeysChange(
                     session_id,
                     session_id_size,
-                    true,
+                    new_keys,
                     key_infos.as_ptr(),
                     key_infos.len() as _,
                 );
