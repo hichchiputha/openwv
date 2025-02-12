@@ -321,8 +321,8 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
                 .keys
                 .iter()
                 .map(|k| cdm::KeyInformation {
-                    key_id: k.data.as_ptr(),
-                    key_id_size: k.data.len() as _,
+                    key_id: k.id.as_ptr(),
+                    key_id_size: k.id.len() as _,
                     status: cdm::KeyStatus::kUsable,
                     system_code: 0,
                 })
