@@ -298,4 +298,8 @@ impl SessionStore {
         let session_id = unsafe { SessionId::from_cxx(id, id_len) }.or(Err(BadSessionId))?;
         self.0.get_mut(&session_id).ok_or(BadSessionId)
     }
+
+    pub fn delete(&mut self, id: SessionId) -> bool {
+        self.0.remove(&id).is_some()
+    }
 }

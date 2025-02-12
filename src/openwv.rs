@@ -347,7 +347,14 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         session_id_size: u32,
     ) {
         debug!("OpenWv({:p}).CloseSession()", self);
-        todo!()
+        match self.sessions.lookup(session_id, session_id_size) {
+            Ok(s) => {
+                let id = s.id();
+                self.sessions.delete(id);
+                self.host.as_mut().OnResolvePromise(promise_id);
+            }
+            Err(e) => self.throw(promise_id, &e),
+        };
     }
 
     unsafe fn RemoveSession(
