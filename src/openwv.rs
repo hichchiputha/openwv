@@ -28,9 +28,10 @@ const EMBEDDED_WVD: &[u8] = include_bytes!("embedded.wvd");
 
 #[no_mangle]
 extern "C" fn InitializeCdmModule_4() {
-    env_logger::builder()
-        .filter_level(log::LevelFilter::Debug)
-        .init();
+    let log_env = env_logger::Env::new()
+        .filter_or("OPENWV_LOG", "info")
+        .write_style("OPENWV_LOG_STYLE");
+    env_logger::init_from_env(log_env);
     debug!("InitializeCdmModule()");
 
     let mut embedded_wvd = std::io::Cursor::new(EMBEDDED_WVD);
