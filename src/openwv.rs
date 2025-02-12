@@ -200,9 +200,11 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         self.host.as_mut().OnInitialized(true);
     }
 
-    fn GetStatusForPolicy(&mut self, promise_id: u32, policy: &cdm::Policy) {
+    fn GetStatusForPolicy(&mut self, promise_id: u32, _policy: &cdm::Policy) {
         debug!("OpenWv({:p}).GetStatusForPolicy()", self);
-        todo!()
+        self.host
+            .as_mut()
+            .OnResolveKeyStatusPromise(promise_id, cdm::KeyStatus::kUsable);
     }
 
     unsafe fn SetServerCertificate(
