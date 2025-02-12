@@ -11,7 +11,7 @@ use std::ffi::c_char;
 use std::fmt::Display;
 use thiserror::Error;
 
-use crate::ffi::cdm::{Exception, InitDataType};
+use crate::ffi::cdm;
 use crate::init_data::{init_data_to_content_id, InitDataError};
 use crate::util::now;
 use crate::video_widevine;
@@ -74,8 +74,8 @@ impl Display for SessionId {
 #[error("invalid or non-existent session ID")]
 pub struct BadSessionId;
 impl CdmError for BadSessionId {
-    fn cdm_exception(&self) -> Exception {
-        Exception::kExceptionInvalidStateError
+    fn cdm_exception(&self) -> cdm::Exception {
+        cdm::Exception::kExceptionInvalidStateError
     }
 }
 
@@ -153,7 +153,7 @@ impl Session {
 
     pub fn generate_request(
         &mut self,
-        init_data_type: InitDataType,
+        init_data_type: cdm::InitDataType,
         init_data: &[u8],
     ) -> Result<video_widevine::SignedMessage, InitDataError> {
         let key_control_nonce: u32 = rand::random();
