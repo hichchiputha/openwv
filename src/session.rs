@@ -113,7 +113,6 @@ pub struct Session {
     id: SessionId,
     device: &'static WidevineDevice,
     keys: KeyState,
-    content_keys: Vec<ContentKey>,
 }
 
 impl Session {
@@ -122,7 +121,6 @@ impl Session {
             id: SessionId::generate(),
             device,
             keys: KeyState::NotSet,
-            content_keys: vec![],
         }
     }
 
@@ -168,7 +166,11 @@ impl Session {
         })
     }
 
-    pub fn update(&mut self, response_raw: &[u8]) -> Result<(), LicenseError> {
+    pub fn load_license_keys(
+        &mut self,
+        response_raw: &[u8],
+        keys: &mut Vec<ContentKey>,
+    ) -> Result<bool, LicenseError> {
         let response = video_widevine::SignedMessage::decode(response_raw)?;
 
         if response.r#type != Some(video_widevine::signed_message::MessageType::License as i32) {
@@ -180,14 +182,15 @@ impl Session {
         };
 
         let padding = Oaep::new::<sha1::Sha1>();
-        let key = self.device.private_key.decrypt(padding, &wrapped_key)?;
-        let keys = self.keys.finish_initialization(&key)?;
+        let session_key = self.device.private_key.decrypt(padding, &wrapped_key)?;
+        let session_keys = self.keys.finish_initialization(&session_key)?;
 
         let Some(license_raw) = response.msg else {
             return Err(LicenseError::NoLicense);
         };
 
-        let mut digester = hmac::Hmac::<sha2::Sha256>::new_from_slice(&keys.mac_server).unwrap();
+        let mut digester =
+            hmac::Hmac::<sha2::Sha256>::new_from_slice(&session_keys.mac_server).unwrap();
         digester.update(&license_raw);
         let expected_sig = digester.finalize().into_bytes();
 
@@ -201,19 +204,15 @@ impl Session {
 
         let license = video_widevine::License::decode(license_raw.as_slice())?;
 
-        self.load_keys(license)
-    }
-
-    fn load_keys(&mut self, license: video_widevine::License) -> Result<(), LicenseError> {
-        let keys = self.keys.unwrap_keys();
-
+        let mut added_keys = false;
         for key in license.key {
             let (Some(iv), Some(mut data)) = (key.iv, key.key) else {
                 continue;
             };
 
             let decryptor =
-                cbc::Decryptor::<aes::Aes128>::new_from_slices(&keys.encryption, &iv).unwrap();
+                cbc::Decryptor::<aes::Aes128>::new_from_slices(&session_keys.encryption, &iv)
+                    .unwrap();
             let new_size = decryptor
                 .decrypt_padded_mut::<aes::cipher::block_padding::Pkcs7>(data.as_mut_slice())?
                 .len();
@@ -226,13 +225,11 @@ impl Session {
             };
 
             info!("Loaded content key: {}", &new_key);
-            self.content_keys.push(new_key);
+            keys.push(new_key);
+            added_keys = true;
         }
-        Ok(())
-    }
 
-    pub fn content_keys(&self) -> &Vec<ContentKey> {
-        &self.content_keys
+        Ok(added_keys)
     }
 }
 

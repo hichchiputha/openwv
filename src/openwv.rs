@@ -8,6 +8,7 @@ use std::slice;
 use std::sync::OnceLock;
 
 use crate::ffi::cdm;
+use crate::keys::ContentKey;
 use crate::session::{Session, SessionStore};
 use crate::util::cstr_from_str;
 use crate::wvd_file;
@@ -120,6 +121,7 @@ extern "C" fn CreateCdmInstance(
         host,
         sessions: SessionStore::new(),
         device,
+        keys: vec![],
         allow_persistent_state: false,
         cpp_peer: Default::default(),
     });
@@ -146,6 +148,7 @@ use crate::ffi;
 pub struct OpenWv {
     host: Pin<&'static mut cdm::Host_10>,
     sessions: SessionStore,
+    keys: Vec<ContentKey>,
     device: &'static wvd_file::WidevineDevice,
     allow_persistent_state: bool,
 }
@@ -305,17 +308,17 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         };
 
         let response_raw = unsafe { slice::from_raw_parts(response, response_size as _) };
-        if let Err(e) = sess.update(response_raw) {
+        if let Err(e) = sess.load_license_keys(response_raw, &mut self.keys) {
             self.throw(promise_id, &e);
             return;
         }
 
         self.host.as_mut().OnResolvePromise(promise_id);
 
-        let keys = sess.content_keys();
-        if !keys.is_empty() {
+        if !self.keys.is_empty() {
             // Build an array of KeyInformation structs that point into keys.
-            let key_infos: Vec<cdm::KeyInformation> = keys
+            let key_infos: Vec<cdm::KeyInformation> = self
+                .keys
                 .iter()
                 .map(|k| cdm::KeyInformation {
                     key_id: k.data.as_ptr(),
