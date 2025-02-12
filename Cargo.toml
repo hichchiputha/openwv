@@ -18,7 +18,10 @@ env_logger = "0.11"
 byteorder = "1"
 rand = "0.9"
 uuid = "1"
-ring = { git = "https://github.com/tchebb/ring.git", branch = "rsa-pss-sha1", features = ["std"] }
+# TODO: Get rid of this once RustCrypto migrates to rand 0.9
+rand8 = { package = "rand", version = "0.8" }
+rsa = "0.9"
+sha1 = { version = "0.10", features = ["oid"] }
 
 [build-dependencies]
 autocxx-build = { git = "https://github.com/google/autocxx.git" }

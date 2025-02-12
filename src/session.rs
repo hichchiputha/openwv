@@ -1,6 +1,6 @@
 use prost::Message;
 use rand::Rng;
-use ring::rand::SystemRandom;
+use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use std::ffi::c_char;
 use std::fmt::Display;
 use thiserror::Error;
@@ -127,16 +127,11 @@ impl Session {
         };
         let req_raw = req.encode_to_vec();
 
-        let mut signature = vec![0u8; self.device.private_key.public().modulus_len()];
-        self.device
-            .private_key
-            .sign(
-                &ring::signature::RSA_PSS_SHA1_FOR_LEGACY_USE_ONLY,
-                &SystemRandom::new(),
-                &req_raw,
-                &mut signature,
-            )
-            .unwrap();
+        let signing_key: rsa::pss::SigningKey<sha1::digest::core_api::CoreWrapper<sha1::Sha1Core>> =
+            rsa::pss::SigningKey::<sha1::Sha1>::new(self.device.private_key.clone());
+        let signature = signing_key
+            .sign_with_rng(&mut rand8::thread_rng(), &req_raw)
+            .to_vec();
 
         Ok(video_widevine::SignedMessage {
             r#type: Some(video_widevine::signed_message::MessageType::LicenseRequest as i32),

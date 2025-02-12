@@ -1,13 +1,13 @@
 use byteorder::{ReadBytesExt, BE};
 use prost::Message;
-use ring::rsa;
+use rsa::pkcs1::DecodeRsaPrivateKey;
 use std::io::Read;
 use thiserror::Error;
 
 use crate::video_widevine::ClientIdentification;
 
 pub struct WidevineDevice {
-    pub private_key: rsa::KeyPair,
+    pub private_key: rsa::RsaPrivateKey,
     pub client_id: ClientIdentification,
 }
 
@@ -21,7 +21,7 @@ pub enum WvdError {
     #[error("unexpected end of data")]
     IoError(#[from] std::io::Error),
     #[error("invalid private key")]
-    BadKey(#[from] ring::error::KeyRejected),
+    BadKey(#[from] rsa::pkcs1::Error),
     #[error("invalid Client ID protobuf")]
     BadClientIdProto(#[from] prost::DecodeError),
 }
@@ -54,7 +54,7 @@ pub fn parse_wvd(wvd: &mut impl Read) -> Result<WidevineDevice, WvdError> {
         .read_to_end(&mut client_id_raw)?;
 
     Ok(WidevineDevice {
-        private_key: rsa::KeyPair::from_der(&private_key_raw)?,
+        private_key: rsa::RsaPrivateKey::from_pkcs1_der(&private_key_raw)?,
         client_id: ClientIdentification::decode(client_id_raw.as_slice())?,
     })
 }
