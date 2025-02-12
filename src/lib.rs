@@ -3,6 +3,7 @@ use autocxx::include_cpp;
 mod util;
 
 mod init_data;
+mod keys;
 mod openwv;
 mod session;
 mod wvd_file;

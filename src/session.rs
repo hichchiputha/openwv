@@ -13,6 +13,7 @@ use thiserror::Error;
 
 use crate::ffi::cdm;
 use crate::init_data::{init_data_to_content_id, InitDataError};
+use crate::keys::ContentKey;
 use crate::util::now;
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;
@@ -105,28 +106,6 @@ pub enum LicenseError {
 impl CdmError for LicenseError {
     fn cdm_exception(&self) -> crate::ffi::cdm::Exception {
         crate::ffi::cdm::Exception::kExceptionTypeError
-    }
-}
-
-pub struct ContentKey {
-    pub id: Vec<u8>,
-    pub data: Vec<u8>,
-    pub key_type: Option<i32>,
-}
-
-impl Display for ContentKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for b in &self.id {
-            write!(f, "{:02x}", b)?;
-        }
-        write!(f, ":")?;
-        for b in &self.data {
-            write!(f, "{:02x}", b)?;
-        }
-        if let Some(t) = self.key_type {
-            write!(f, " [{}]", t)?;
-        }
-        Ok(())
     }
 }
 
