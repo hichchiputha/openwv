@@ -109,9 +109,9 @@ impl CdmError for LicenseError {
 }
 
 pub struct ContentKey {
-    id: Vec<u8>,
-    data: Vec<u8>,
-    key_type: Option<i32>,
+    pub id: Vec<u8>,
+    pub data: Vec<u8>,
+    pub key_type: Option<i32>,
 }
 
 impl Display for ContentKey {
@@ -250,6 +250,10 @@ impl Session {
             self.content_keys.push(new_key);
         }
         Ok(())
+    }
+
+    pub fn content_keys(&self) -> &Vec<ContentKey> {
+        &self.content_keys
     }
 }
 

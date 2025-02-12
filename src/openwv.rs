@@ -307,9 +307,34 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         let response_raw = unsafe { slice::from_raw_parts(response, response_size as _) };
         if let Err(e) = sess.update(response_raw) {
             self.throw(promise_id, &e);
+            return;
         }
 
         self.host.as_mut().OnResolvePromise(promise_id);
+
+        let keys = sess.content_keys();
+        if !keys.is_empty() {
+            // Build an array of KeyInformation structs that point into keys.
+            let key_infos: Vec<cdm::KeyInformation> = keys
+                .iter()
+                .map(|k| cdm::KeyInformation {
+                    key_id: k.data.as_ptr(),
+                    key_id_size: k.data.len() as _,
+                    status: cdm::KeyStatus::kUsable,
+                    system_code: 0,
+                })
+                .collect();
+
+            unsafe {
+                self.host.as_mut().OnSessionKeysChange(
+                    session_id,
+                    session_id_size,
+                    true,
+                    key_infos.as_ptr(),
+                    key_infos.len() as _,
+                );
+            }
+        }
     }
 
     unsafe fn CloseSession(

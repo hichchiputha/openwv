@@ -13,6 +13,7 @@ include_cpp! {
     safety!(unsafe)
     subclass!("cdm::ContentDecryptionModule_10", OpenWv)
     generate!("cdm::Host_10")
+    generate_pod!("cdm::KeyInformation")
 }
 
 mod video_widevine {
