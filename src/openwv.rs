@@ -70,15 +70,14 @@ extern "C" fn CreateCdmInstance(
         return null_mut();
     }
 
-    if key_system.is_null() {
-        error!("Got NULL key_system pointer");
-        return null_mut();
-    }
-
     // SAFETY: The API contract requires that `key_system`` be a valid pointer
     // to a buffer of length `key_system_size``.
-    let key_system_str =
-        unsafe { slice_from_c(key_system as *const c_uchar, key_system_size as _) }.unwrap();
+    let Some(key_system_str) =
+        (unsafe { slice_from_c(key_system as *const c_uchar, key_system_size as _) })
+    else {
+        error!("Got NULL key_system pointer");
+        return null_mut();
+    };
 
     if key_system_str != WV_KEY_SYSTEM {
         error!(
