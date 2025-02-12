@@ -14,7 +14,7 @@ use thiserror::Error;
 use crate::ffi::cdm;
 use crate::init_data::{init_data_to_content_id, InitDataError};
 use crate::keys::ContentKey;
-use crate::util::now;
+use crate::util::{now, slice_from_c};
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;
 use crate::CdmError;
@@ -47,8 +47,7 @@ impl SessionId {
     }
 
     pub unsafe fn from_cxx(ptr: *const c_char, size: u32) -> Result<SessionId, BadSessionId> {
-        let slice =
-            unsafe { std::slice::from_raw_parts(ptr as *const std::ffi::c_uchar, size as _) };
+        let slice = unsafe { slice_from_c(ptr as *const std::ffi::c_uchar, size) }.unwrap();
 
         if slice.len() != Self::LEN {
             return Err(BadSessionId);

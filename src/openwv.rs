@@ -4,13 +4,12 @@ use prost::Message;
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::{null, null_mut};
-use std::slice;
 use std::sync::OnceLock;
 
 use crate::ffi::cdm;
 use crate::keys::ContentKey;
 use crate::session::{Session, SessionStore};
-use crate::util::cstr_from_str;
+use crate::util::{cstr_from_str, slice_from_c};
 use crate::wvd_file;
 use crate::CdmError;
 
@@ -79,7 +78,7 @@ extern "C" fn CreateCdmInstance(
     // SAFETY: The API contract requires that `key_system`` be a valid pointer
     // to a buffer of length `key_system_size``.
     let key_system_str =
-        unsafe { slice::from_raw_parts(key_system as *const c_uchar, key_system_size as _) };
+        unsafe { slice_from_c(key_system as *const c_uchar, key_system_size as _) }.unwrap();
 
     if key_system_str != WV_KEY_SYSTEM {
         error!(
@@ -244,7 +243,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
 
         let mut sess = Session::new(self.device);
 
-        let init_data_raw = unsafe { slice::from_raw_parts(init_data, init_data_size as _) };
+        let init_data_raw = unsafe { slice_from_c(init_data, init_data_size) }.unwrap();
         match sess.generate_request(init_data_type, init_data_raw) {
             Ok(request) => {
                 let session_id = sess.id();
@@ -307,7 +306,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
             }
         };
 
-        let response_raw = unsafe { slice::from_raw_parts(response, response_size as _) };
+        let response_raw = unsafe { slice_from_c(response, response_size as _) }.unwrap();
         if let Err(e) = sess.load_license_keys(response_raw, &mut self.keys) {
             self.throw(promise_id, &e);
             return;
