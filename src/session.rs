@@ -137,7 +137,7 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(device: &'static WidevineDevice) -> Session {
+    pub fn new(device: &'static WidevineDevice) -> Self {
         Session {
             id: SessionId::generate(),
             device,
