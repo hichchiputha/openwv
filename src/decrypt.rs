@@ -53,9 +53,9 @@ fn decrypt_cenc(
         remaining = rest;
 
         // Encrypted portion
-        let (encrypted, rest) = remaining.split_at(subsample.cipher_bytes.try_into()?);
+        let (ciphered, rest) = remaining.split_at(subsample.cipher_bytes.try_into()?);
         let pos = out.len();
-        out.extend_from_slice(encrypted);
+        out.extend_from_slice(ciphered);
         decryptor.apply_keystream(&mut out[pos..]);
         remaining = rest;
     }
