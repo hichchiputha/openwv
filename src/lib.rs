@@ -21,6 +21,7 @@ include_cpp! {
     generate_pod!("cdm::KeyInformation")
     generate_pod!("cdm::InputBuffer_2")
     generate_pod!("cdm::SubsampleEntry")
+    generate_pod!("cdm::Pattern")
 }
 
 // These are all just plain enums, totally safe to copy.

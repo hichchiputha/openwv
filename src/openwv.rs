@@ -405,7 +405,14 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
 
         let key = key_id.and_then(|id| self.keys.iter().find(|&k| k.id == id));
 
-        match decrypt_buf(key, iv, data, in_buf.encryption_scheme, subsamples) {
+        match decrypt_buf(
+            key,
+            iv,
+            data,
+            in_buf.encryption_scheme,
+            subsamples,
+            &in_buf.pattern,
+        ) {
             Ok(decrypted) => {
                 let our_size: u32 = decrypted.len().try_into().unwrap();
 
@@ -430,7 +437,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
 
                 cdm::Status::kSuccess
             }
-            Err(DecryptError::NoKeyIv) => cdm::Status::kNoKey,
+            Err(DecryptError::NoKey) => cdm::Status::kNoKey,
             Err(e) => {
                 warn!("Decryption error: {}", e);
                 cdm::Status::kDecryptError
