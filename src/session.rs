@@ -114,6 +114,7 @@ pub struct Session {
     id: SessionId,
     device: &'static WidevineDevice,
     request_msg: Option<Vec<u8>>,
+    keys: Vec<ContentKey>,
 }
 
 impl Session {
@@ -122,11 +123,16 @@ impl Session {
             id: SessionId::generate(),
             device,
             request_msg: None,
+            keys: vec![],
         }
     }
 
     pub fn id(&self) -> SessionId {
         self.id
+    }
+
+    pub fn keys(&self) -> &[ContentKey] {
+        &self.keys
     }
 
     pub fn generate_request(
@@ -172,11 +178,7 @@ impl Session {
         })
     }
 
-    pub fn load_license_keys(
-        &self,
-        response_raw: &[u8],
-        keys: &mut Vec<ContentKey>,
-    ) -> Result<bool, LicenseError> {
+    pub fn load_license_keys(&mut self, response_raw: &[u8]) -> Result<bool, LicenseError> {
         let response = video_widevine::SignedMessage::decode(response_raw)?;
 
         if response.r#type != Some(video_widevine::signed_message::MessageType::License as i32) {
@@ -227,11 +229,15 @@ impl Session {
             };
 
             info!("Loaded content key: {}", &new_key);
-            keys.push(new_key);
+            self.keys.push(new_key);
             added_keys = true;
         }
 
         Ok(added_keys)
+    }
+
+    pub fn clear_licenses(&mut self) {
+        self.keys.clear();
     }
 }
 
@@ -294,6 +300,13 @@ impl SessionStore {
     pub fn lookup(&mut self, id: *const c_char, id_len: u32) -> Result<&mut Session, BadSessionId> {
         let session_id = unsafe { SessionId::from_cxx(id, id_len) }.or(Err(BadSessionId))?;
         self.0.get_mut(&session_id).ok_or(BadSessionId)
+    }
+
+    pub fn lookup_key(&self, id: &[u8]) -> Option<&ContentKey> {
+        // A linear search of each session's keys is probably in practice
+        // faster than a HashMap would be, given that we expect each session
+        // to have on the order of 10 keys at most.
+        self.0.values().flat_map(|s| &s.keys).find(|&k| k.id == id)
     }
 
     pub fn delete(&mut self, id: SessionId) -> bool {

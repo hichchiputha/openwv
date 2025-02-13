@@ -8,7 +8,6 @@ use std::sync::OnceLock;
 
 use crate::decrypt::{decrypt_buf, DecryptError};
 use crate::ffi::cdm;
-use crate::keys::ContentKey;
 use crate::server_certificate::{parse_server_certificate, ServerCertificate};
 use crate::session::{Session, SessionStore};
 use crate::util::{cstr_from_str, slice_from_c};
@@ -122,7 +121,6 @@ extern "C" fn CreateCdmInstance(
         host,
         sessions: SessionStore::new(),
         device,
-        keys: vec![],
         server_cert: None,
         allow_persistent_state: false,
         cpp_peer: Default::default(),
@@ -150,7 +148,6 @@ use crate::ffi;
 pub struct OpenWv {
     host: Pin<&'static mut cdm::Host_10>,
     sessions: SessionStore,
-    keys: Vec<ContentKey>,
     device: &'static wvd_file::WidevineDevice,
     server_cert: Option<ServerCertificate>,
     allow_persistent_state: bool,
@@ -316,7 +313,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         };
 
         let response_raw = unsafe { slice_from_c(response, response_size as _) }.unwrap();
-        let new_keys = match sess.load_license_keys(response_raw, &mut self.keys) {
+        let new_keys = match sess.load_license_keys(response_raw) {
             Err(e) => {
                 self.throw(promise_id, &e);
                 return;
@@ -328,8 +325,8 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
 
         if new_keys {
             // Build an array of KeyInformation structs that point into keys.
-            let key_infos: Vec<cdm::KeyInformation> = self
-                .keys
+            let key_infos: Vec<cdm::KeyInformation> = sess
+                .keys()
                 .iter()
                 .map(|k| cdm::KeyInformation {
                     key_id: k.id.as_ptr(),
@@ -376,7 +373,13 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         session_id_size: u32,
     ) {
         debug!("OpenWv({:p}).RemoveSession()", self);
-        todo!()
+        match self.sessions.lookup(session_id, session_id_size) {
+            Ok(s) => {
+                s.clear_licenses();
+                self.host.as_mut().OnResolvePromise(promise_id);
+            }
+            Err(e) => self.throw(promise_id, &e),
+        };
     }
 
     unsafe fn TimerExpired(&mut self, _context: *mut autocxx::c_void) {
@@ -402,7 +405,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         let iv = unsafe { slice_from_c(in_buf.iv, in_buf.iv_size) };
         let subsamples = unsafe { slice_from_c(in_buf.subsamples, in_buf.num_subsamples) };
 
-        let key = key_id.and_then(|id| self.keys.iter().find(|&k| k.id == id));
+        let key = key_id.and_then(|v| self.sessions.lookup_key(v));
 
         match decrypt_buf(
             key,
