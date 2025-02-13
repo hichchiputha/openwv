@@ -13,6 +13,8 @@ pub enum DecryptError {
     BadKeyIvLength(#[from] aes::cipher::InvalidLength),
     #[error("integer overflow")]
     Overflow(#[from] std::num::TryFromIntError),
+    #[error("subsamples exceed data length")]
+    TooShort,
     #[error("no subsamples given for cenc")]
     CencNoSubsamples,
 }
@@ -44,22 +46,18 @@ fn decrypt_cenc(
 ) -> Result<Vec<u8>, DecryptError> {
     let mut decryptor = ctr::Ctr64BE::<aes::Aes128>::new_from_slices(key.data.as_slice(), iv)?;
 
-    let mut out = vec![];
-    let mut remaining = data;
+    let mut out = data.to_owned();
+    let mut remaining = out.as_mut_slice();
     for subsample in subsamples {
-        // Cleartext portion
-        let (clear, rest) = remaining.split_at(subsample.clear_bytes.try_into()?);
-        out.extend_from_slice(clear);
-        remaining = rest;
+        let ciphered_start = usize::try_from(subsample.clear_bytes)?;
+        let ciphered_end = ciphered_start + usize::try_from(subsample.cipher_bytes)?;
+        let ciphered = remaining
+            .get_mut(ciphered_start..ciphered_end)
+            .ok_or(DecryptError::TooShort)?;
 
-        // Encrypted portion
-        let (ciphered, rest) = remaining.split_at(subsample.cipher_bytes.try_into()?);
-        let pos = out.len();
-        out.extend_from_slice(ciphered);
-        decryptor.apply_keystream(&mut out[pos..]);
-        remaining = rest;
+        decryptor.apply_keystream(ciphered);
+
+        remaining = &mut remaining[ciphered_end..];
     }
-
-    out.extend_from_slice(remaining);
     Ok(out)
 }
