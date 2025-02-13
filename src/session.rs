@@ -253,7 +253,7 @@ fn derive_session_keys(
         cmac.update(&[counter]);
         cmac.update(label);
         cmac.update(&[0]);
-        cmac.update(&request_msg);
+        cmac.update(request_msg);
 
         let mut buf = [0u8; 4];
         BE::write_u32(&mut buf, key_size);
