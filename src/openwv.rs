@@ -379,10 +379,9 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         todo!()
     }
 
-    // TODO: what's this for?
-    unsafe fn TimerExpired(&mut self, context: *mut autocxx::c_void) {
+    unsafe fn TimerExpired(&mut self, _context: *mut autocxx::c_void) {
         debug!("OpenWv({:p}).TimerExpired()", self);
-        todo!()
+        warn!("Got TimerExpired(), but we never called SetTimer()!");
     }
 
     unsafe fn Decrypt(
@@ -461,11 +460,11 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         cdm::Status::kInitializationError
     }
 
-    fn DeinitializeDecoder(&mut self, decoder_type: cdm::StreamType) {
+    fn DeinitializeDecoder(&mut self, _decoder_type: cdm::StreamType) {
         debug!("OpenWv({:p}).DeinitializeDecoder()", self);
     }
 
-    fn ResetDecoder(&mut self, decoder_type: cdm::StreamType) {
+    fn ResetDecoder(&mut self, _decoder_type: cdm::StreamType) {
         debug!("OpenWv({:p}).ResetDecoder()", self);
     }
 
