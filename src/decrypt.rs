@@ -33,8 +33,17 @@ pub fn decrypt_buf(
         (kUnencrypted, _, _, _) => Ok(()),
         (_, None, _, _) => Err(DecryptError::NoKey),
         (kCenc, Some(key), Some(iv), Some(subsamples)) => {
-            let mut decryptor =
-                ctr::Ctr64BE::<aes::Aes128>::new_from_slices(key.data.as_slice(), iv)?;
+            let mut decryptor = match iv.len() {
+                len if len < 16 => {
+                    // IV is only 8 bytes for CTR mode. Chromium zero-pads it
+                    // to 16 bytes, but Firefox doesn't. Pad if needed.
+                    let mut padded_iv = [0u8; 16];
+                    padded_iv[..len].copy_from_slice(iv);
+                    ctr::Ctr64BE::<aes::Aes128>::new_from_slices(key.data.as_slice(), &padded_iv)?
+                }
+                16 => ctr::Ctr64BE::<aes::Aes128>::new_from_slices(key.data.as_slice(), iv)?,
+                _ => return Err(aes::cipher::InvalidLength.into()),
+            };
 
             decrypt_subsamples(data, subsamples, |ciphered| {
                 decryptor.apply_keystream(ciphered);
