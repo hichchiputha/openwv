@@ -7,7 +7,7 @@ use crate::keys::ContentKey;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum DecryptError {
-    #[error("key neede but not present")]
+    #[error("key needed but not present")]
     NoKey,
     #[error("no iv/subsamples provided for ciphered scheme")]
     NoIvSubsamples,
