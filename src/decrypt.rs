@@ -22,15 +22,15 @@ pub enum DecryptError {
 pub fn decrypt_buf(
     key: Option<&ContentKey>,
     iv: Option<&[u8]>,
-    data: &[u8],
+    data: &mut [u8],
     mode: cdm::EncryptionScheme,
     subsamples: Option<&[cdm::SubsampleEntry]>,
     pattern: &cdm::Pattern,
-) -> Result<Vec<u8>, DecryptError> {
+) -> Result<(), DecryptError> {
     use cdm::EncryptionScheme::*;
 
     match (mode, key, iv, subsamples) {
-        (kUnencrypted, _, _, _) => Ok(data.to_owned()),
+        (kUnencrypted, _, _, _) => Ok(()),
         (_, None, _, _) => Err(DecryptError::NoKey),
         (kCenc, Some(key), Some(iv), Some(subsamples)) => {
             let mut decryptor =
@@ -61,12 +61,11 @@ pub fn decrypt_buf(
 }
 
 fn decrypt_subsamples(
-    data: &[u8],
+    data: &mut [u8],
     subsamples: &[cdm::SubsampleEntry],
     mut decrypt: impl FnMut(&mut [u8]),
-) -> Result<Vec<u8>, DecryptError> {
-    let mut out = data.to_owned();
-    let mut remaining = out.as_mut_slice();
+) -> Result<(), DecryptError> {
+    let mut remaining = data;
     for subsample in subsamples {
         let ciphered_start = usize::try_from(subsample.clear_bytes)?;
         let ciphered_end = ciphered_start + usize::try_from(subsample.cipher_bytes)?;
@@ -78,7 +77,7 @@ fn decrypt_subsamples(
 
         remaining = &mut remaining[ciphered_end..];
     }
-    Ok(out)
+    Ok(())
 }
 
 fn decrypt_pattern(

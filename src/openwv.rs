@@ -390,16 +390,33 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
     unsafe fn Decrypt(
         &mut self,
         in_buf: &cdm::InputBuffer_2,
-        out_raw: *mut cdm::DecryptedBlock,
+        out_block_raw: *mut cdm::DecryptedBlock,
     ) -> cdm::Status {
         trace!("OpenWv({:p}).Decrypt()", self);
 
-        let mut out = match unsafe { out_raw.as_mut() } {
+        let mut out_block = match unsafe { out_block_raw.as_mut() } {
             None => return cdm::Status::kSuccess,
             Some(p) => unsafe { Pin::new_unchecked(p) },
         };
 
-        let data = unsafe { slice_from_c(in_buf.data, in_buf.data_size) }.unwrap();
+        // Output will always be the same size as input, so let's do the unsafe
+        // allocation here and copy from in_buf to get an initialized slice
+        // decrypt_buf() can modify in-place.
+        let out_buf_raw = self.host.as_mut().Allocate(in_buf.data_size);
+        let mut out_buf = match unsafe { out_buf_raw.as_mut() } {
+            None => return cdm::Status::kDecryptError,
+            Some(p) => unsafe { Pin::new_unchecked(p) },
+        };
+
+        // SAFETY: Allocation may be uninitialized, so from_raw_parts_mut() is
+        // only safe after we initialize it.
+        let out_data_raw = out_buf.as_mut().Data();
+        let data_len = usize::try_from(in_buf.data_size).unwrap();
+        let data = unsafe {
+            out_data_raw.copy_from_nonoverlapping(in_buf.data, data_len);
+            std::slice::from_raw_parts_mut(out_data_raw, data_len)
+        };
+        out_buf.as_mut().SetSize(in_buf.data_size);
 
         let key_id = unsafe { slice_from_c(in_buf.key_id, in_buf.key_id_size) };
         let iv = unsafe { slice_from_c(in_buf.iv, in_buf.iv_size) };
@@ -415,33 +432,18 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
             subsamples,
             &in_buf.pattern,
         ) {
-            Ok(decrypted) => {
-                let our_size: u32 = decrypted.len().try_into().unwrap();
-
-                let out_buf_raw = self.host.as_mut().Allocate(our_size);
-                let mut out_buf = match unsafe { out_buf_raw.as_mut() } {
-                    None => return cdm::Status::kDecryptError,
-                    Some(p) => unsafe { Pin::new_unchecked(p) },
-                };
-
-                let out_data = unsafe {
-                    std::slice::from_raw_parts_mut(
-                        out_buf.as_mut().Data(),
-                        out_buf.as_mut().Capacity() as _,
-                    )
-                };
-
-                out_data[..decrypted.len()].copy_from_slice(&decrypted);
-                out_buf.as_mut().SetSize(our_size);
-
-                out.as_mut().SetDecryptedBuffer(out_buf_raw);
-                out.as_mut().SetTimestamp(in_buf.timestamp);
-
+            Ok(()) => {
+                out_block.as_mut().SetDecryptedBuffer(out_buf_raw);
+                out_block.as_mut().SetTimestamp(in_buf.timestamp);
                 cdm::Status::kSuccess
             }
-            Err(DecryptError::NoKey) => cdm::Status::kNoKey,
+            Err(DecryptError::NoKey) => {
+                out_buf.as_mut().Destroy();
+                cdm::Status::kNoKey
+            }
             Err(e) => {
                 warn!("Decryption error: {}", e);
+                out_buf.as_mut().Destroy();
                 cdm::Status::kDecryptError
             }
         }
