@@ -55,7 +55,7 @@ extern "C" fn DeinitializeCdmModule() {
 const WV_KEY_SYSTEM: &[u8] = b"com.widevine.alpha";
 type GetCdmHostFunc = unsafe extern "C" fn(c_int, *mut c_void) -> *mut c_void;
 #[no_mangle]
-extern "C" fn CreateCdmInstance(
+unsafe extern "C" fn CreateCdmInstance(
     cdm_interface_version: c_int,
     key_system: *const c_char,
     key_system_size: u32,
