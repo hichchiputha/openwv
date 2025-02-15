@@ -5,6 +5,7 @@ mod util;
 mod decrypt;
 mod init_data;
 mod keys;
+mod license;
 mod openwv;
 mod server_certificate;
 mod session;
