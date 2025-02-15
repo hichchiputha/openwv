@@ -153,10 +153,15 @@ pub struct OpenWv {
     allow_persistent_state: bool,
 }
 
-impl OpenWv {
-    fn reject(&mut self, promise_id: u32, exception: cdm::Exception, msg: &std::ffi::CStr) {
+impl cdm::Host_10 {
+    fn reject(
+        self: Pin<&mut Self>,
+        promise_id: u32,
+        exception: cdm::Exception,
+        msg: &std::ffi::CStr,
+    ) {
         unsafe {
-            self.host.as_mut().OnRejectPromise(
+            self.OnRejectPromise(
                 promise_id,
                 exception,
                 0,
@@ -166,7 +171,7 @@ impl OpenWv {
         }
     }
 
-    fn throw(&mut self, promise_id: u32, e: &(impl std::error::Error + CdmError)) {
+    fn throw(self: Pin<&mut Self>, promise_id: u32, e: &(impl std::error::Error + CdmError)) {
         warn!("Returning API error: {}", e);
 
         // Need to keep this alive until after the FFI call, or else we'll be
@@ -179,7 +184,7 @@ impl OpenWv {
         };
 
         unsafe {
-            self.host.as_mut().OnRejectPromise(
+            self.OnRejectPromise(
                 promise_id,
                 e.cdm_exception(),
                 e.cdm_system_code(),
@@ -224,7 +229,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
                 self.server_cert = Some(cert);
                 self.host.as_mut().OnResolvePromise(promise_id);
             }
-            Err(e) => self.throw(promise_id, &e),
+            Err(e) => self.host.as_mut().throw(promise_id, &e),
         }
     }
 
@@ -239,7 +244,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         debug!("OpenWv({:p}).CreateSessionAndGenerateRequest()", self);
         if session_type == cdm::SessionType::kPersistentLicense && !self.allow_persistent_state {
             // TODO: error details, better error framework
-            self.reject(
+            self.host.as_mut().reject(
                 promise_id,
                 cdm::Exception::kExceptionNotSupportedError,
                 c"persistent state not allowed",
@@ -274,7 +279,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
                     );
                 }
             }
-            Err(e) => self.throw(promise_id, &e),
+            Err(e) => self.host.as_mut().throw(promise_id, &e),
         }
     }
 
@@ -288,7 +293,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         debug!("OpenWv({:p}).LoadSession()", self);
 
         // TODO: Implement
-        self.reject(
+        self.host.as_mut().reject(
             promise_id,
             cdm::Exception::kExceptionNotSupportedError,
             c"no persistent sessions",
@@ -307,7 +312,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         let sess = match unsafe { self.sessions.lookup(session_id, session_id_size) } {
             Ok(s) => s,
             Err(e) => {
-                self.throw(promise_id, &e);
+                self.host.as_mut().throw(promise_id, &e);
                 return;
             }
         };
@@ -315,7 +320,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         let response = unsafe { slice_from_c(response_raw, response_size as _) }.unwrap();
         let new_keys = match sess.load_license_keys(response) {
             Err(e) => {
-                self.throw(promise_id, &e);
+                self.host.as_mut().throw(promise_id, &e);
                 return;
             }
             Ok(b) => b,
@@ -362,7 +367,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
                 info!("Deleted session {}", id);
                 self.host.as_mut().OnResolvePromise(promise_id);
             }
-            Err(e) => self.throw(promise_id, &e),
+            Err(e) => self.host.as_mut().throw(promise_id, &e),
         };
     }
 
@@ -378,7 +383,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
                 s.clear_licenses();
                 self.host.as_mut().OnResolvePromise(promise_id);
             }
-            Err(e) => self.throw(promise_id, &e),
+            Err(e) => self.host.as_mut().throw(promise_id, &e),
         };
     }
 
