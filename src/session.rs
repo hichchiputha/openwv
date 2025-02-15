@@ -127,14 +127,6 @@ impl Session {
         }
     }
 
-    pub fn id(&self) -> SessionId {
-        self.id
-    }
-
-    pub fn keys(&self) -> &[ContentKey] {
-        &self.keys
-    }
-
     pub fn generate_request(
         &mut self,
         init_data_type: cdm::InitDataType,
@@ -238,6 +230,14 @@ impl Session {
 
     pub fn clear_licenses(&mut self) {
         self.keys.clear();
+    }
+
+    pub fn id(&self) -> SessionId {
+        self.id
+    }
+
+    pub fn keys(&self) -> &[ContentKey] {
+        &self.keys
     }
 }
 
