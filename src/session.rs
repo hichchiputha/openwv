@@ -159,18 +159,18 @@ impl Session {
             }
         }
 
-        let req_raw = req.encode_to_vec();
+        let req_bytes = req.encode_to_vec();
 
         let signing_key = rsa::pss::SigningKey::<sha1::Sha1>::new(self.device.private_key.clone());
         let signature = signing_key
-            .sign_with_rng(&mut rand8::thread_rng(), &req_raw)
+            .sign_with_rng(&mut rand8::thread_rng(), &req_bytes)
             .to_vec();
 
-        self.request_msg = Some(req_raw.clone());
+        self.request_msg = Some(req_bytes.clone());
 
         Ok(video_widevine::SignedMessage {
             r#type: Some(video_widevine::signed_message::MessageType::LicenseRequest as i32),
-            msg: Some(req_raw),
+            msg: Some(req_bytes),
             signature: Some(signature),
             session_key: None,
             remote_attestation: None,
@@ -178,8 +178,8 @@ impl Session {
         })
     }
 
-    pub fn load_license_keys(&mut self, response_raw: &[u8]) -> Result<bool, LicenseError> {
-        let response = video_widevine::SignedMessage::decode(response_raw)?;
+    pub fn load_license_keys(&mut self, response_bytes: &[u8]) -> Result<bool, LicenseError> {
+        let response = video_widevine::SignedMessage::decode(response_bytes)?;
 
         if response.r#type != Some(video_widevine::signed_message::MessageType::License as i32) {
             return Err(LicenseError::WrongType);
@@ -194,11 +194,11 @@ impl Session {
             &session_key,
         )?;
 
-        let license_raw = response.msg.ok_or(LicenseError::NoLicense)?;
+        let license_bytes = response.msg.ok_or(LicenseError::NoLicense)?;
 
         let mut digester =
             hmac::Hmac::<sha2::Sha256>::new_from_slice(&session_keys.mac_server).unwrap();
-        digester.update(&license_raw);
+        digester.update(&license_bytes);
         let expected_sig = digester.finalize().into_bytes();
 
         let actual_sig = response.signature.ok_or(LicenseError::NoSignature)?;
@@ -206,7 +206,7 @@ impl Session {
             return Err(LicenseError::BadSignature);
         }
 
-        let license = video_widevine::License::decode(license_raw.as_slice())?;
+        let license = video_widevine::License::decode(license_bytes.as_slice())?;
 
         let mut added_keys = false;
         for key in license.key {

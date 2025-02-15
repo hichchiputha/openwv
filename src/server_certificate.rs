@@ -49,14 +49,14 @@ impl CdmError for ServerCertificateError {
 pub fn parse_server_certificate(
     server_certificate: Option<&[u8]>,
 ) -> Result<ServerCertificate, ServerCertificateError> {
-    let signed_cert_raw = match server_certificate {
+    let signed_cert_bytes = match server_certificate {
         None | Some(&[]) => return Err(ServerCertificateError::CertificateEmpty),
         Some(v) => v,
     };
 
-    let signed_cert = video_widevine::SignedDrmDeviceCertificate::decode(signed_cert_raw)?;
+    let signed_cert = video_widevine::SignedDrmDeviceCertificate::decode(signed_cert_bytes)?;
 
-    let cert_raw = signed_cert
+    let cert_bytes = signed_cert
         .drm_certificate
         .ok_or(ServerCertificateError::MissingFields)?;
 
@@ -69,9 +69,9 @@ pub fn parse_server_certificate(
 
     let service_key = rsa::RsaPublicKey::from_pkcs1_der(ROOT_PUBKEY).unwrap();
     let verifying_key = rsa::pss::VerifyingKey::<sha1::Sha1>::new(service_key);
-    verifying_key.verify(&cert_raw, &signature)?;
+    verifying_key.verify(&cert_bytes, &signature)?;
 
-    let cert = video_widevine::DrmDeviceCertificate::decode(cert_raw.as_slice())?;
+    let cert = video_widevine::DrmDeviceCertificate::decode(cert_bytes.as_slice())?;
 
     let cert_type = cert.r#type.ok_or(ServerCertificateError::MissingFields)?;
     if cert_type != video_widevine::drm_device_certificate::CertificateType::Service as i32 {

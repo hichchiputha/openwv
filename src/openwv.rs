@@ -233,7 +233,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         promise_id: u32,
         session_type: cdm::SessionType,
         init_data_type: cdm::InitDataType,
-        init_data: *const u8,
+        init_data_raw: *const u8,
         init_data_size: u32,
     ) {
         debug!("OpenWv({:p}).CreateSessionAndGenerateRequest()", self);
@@ -249,8 +249,8 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
 
         let mut sess = Session::new(self.device);
 
-        let init_data_raw = unsafe { slice_from_c(init_data, init_data_size) }.unwrap();
-        match sess.generate_request(init_data_type, init_data_raw, self.server_cert.as_ref()) {
+        let init_data = unsafe { slice_from_c(init_data_raw, init_data_size) }.unwrap();
+        match sess.generate_request(init_data_type, init_data, self.server_cert.as_ref()) {
             Ok(request) => {
                 let session_id = sess.id();
 
@@ -300,7 +300,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         promise_id: u32,
         session_id: *const c_char,
         session_id_size: u32,
-        response: *const u8,
+        response_raw: *const u8,
         response_size: u32,
     ) {
         debug!("OpenWv({:p}).UpdateSession()", self);
@@ -312,8 +312,8 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
             }
         };
 
-        let response_raw = unsafe { slice_from_c(response, response_size as _) }.unwrap();
-        let new_keys = match sess.load_license_keys(response_raw) {
+        let response = unsafe { slice_from_c(response_raw, response_size as _) }.unwrap();
+        let new_keys = match sess.load_license_keys(response) {
             Err(e) => {
                 self.throw(promise_id, &e);
                 return;

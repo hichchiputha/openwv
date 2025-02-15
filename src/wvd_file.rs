@@ -44,17 +44,17 @@ pub fn parse_wvd(wvd: &mut impl Read) -> Result<WidevineDevice, WvdError> {
     let _flags = wvd.read_u8()?;
 
     let private_key_len = wvd.read_u16::<BE>()?;
-    let mut private_key_raw = vec![];
+    let mut private_key_bytes = vec![];
     wvd.take(private_key_len.into())
-        .read_to_end(&mut private_key_raw)?;
+        .read_to_end(&mut private_key_bytes)?;
 
     let client_id_len = wvd.read_u16::<BE>()?;
-    let mut client_id_raw = vec![];
+    let mut client_id_bytes = vec![];
     wvd.take(client_id_len.into())
-        .read_to_end(&mut client_id_raw)?;
+        .read_to_end(&mut client_id_bytes)?;
 
     Ok(WidevineDevice {
-        private_key: rsa::RsaPrivateKey::from_pkcs1_der(&private_key_raw)?,
-        client_id: ClientIdentification::decode(client_id_raw.as_slice())?,
+        private_key: rsa::RsaPrivateKey::from_pkcs1_der(&private_key_bytes)?,
+        client_id: ClientIdentification::decode(client_id_bytes.as_slice())?,
     })
 }
