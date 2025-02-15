@@ -13,7 +13,9 @@ use thiserror::Error;
 use crate::ffi::cdm;
 use crate::init_data::{init_data_to_content_id, InitDataError};
 use crate::keys::ContentKey;
-use crate::server_certificate::{encrypt_client_id, ServerCertificate};
+use crate::server_certificate::{
+    encrypt_client_id, parse_service_cert_message, ServerCertificate, ServerCertificateError,
+};
 use crate::util::{now, slice_from_c};
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;
@@ -80,10 +82,36 @@ impl CdmError for BadSessionId {
 }
 
 #[derive(Error, Debug)]
+pub enum SessionError {
+    #[error("update is not valid for state")]
+    InvalidState,
+    #[error("couldn't load server certificate: {0}")]
+    ServiceCertError(#[from] ServerCertificateError),
+    #[error("couldn't load license: {0}")]
+    LicenseError(#[from] LicenseError),
+}
+
+impl CdmError for SessionError {
+    fn cdm_exception(&self) -> cdm::Exception {
+        match self {
+            Self::InvalidState => cdm::Exception::kExceptionTypeError,
+            Self::LicenseError(e) => e.cdm_exception(),
+            Self::ServiceCertError(_) => cdm::Exception::kExceptionTypeError,
+        }
+    }
+
+    fn cdm_system_code(&self) -> u32 {
+        match self {
+            Self::InvalidState => 0,
+            Self::LicenseError(e) => e.cdm_system_code(),
+            Self::ServiceCertError(e) => e.cdm_system_code(),
+        }
+    }
+}
+
+#[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum LicenseError {
-    #[error("no stored request")]
-    NoRequest,
     #[error("bad protobuf serialization")]
     BadProto(#[from] prost::DecodeError),
     #[error("not a license message")]
@@ -110,33 +138,91 @@ impl CdmError for LicenseError {
     }
 }
 
+enum SessionState {
+    AwaitingServiceCert(Box<video_widevine::license_request::ContentIdentification>),
+    AwaitingLicense { request_bytes: Vec<u8> },
+    Active,
+    Invalid,
+}
+
+pub enum SessionEvent {
+    None,
+    Message(Vec<u8>),
+    KeysChange { new_keys: bool },
+}
+
 pub struct Session {
     id: SessionId,
     device: &'static WidevineDevice,
-    request_msg: Option<Vec<u8>>,
+    state: SessionState,
     keys: Vec<ContentKey>,
 }
 
 impl Session {
-    pub fn new(device: &'static WidevineDevice) -> Self {
-        Session {
-            id: SessionId::generate(),
-            device,
-            request_msg: None,
-            keys: vec![],
-        }
-    }
-
-    pub fn generate_request(
-        &mut self,
+    pub fn create(
+        device: &'static WidevineDevice,
         init_data_type: cdm::InitDataType,
         init_data: &[u8],
         server_certificate: Option<&ServerCertificate>,
-    ) -> Result<video_widevine::SignedMessage, InitDataError> {
+    ) -> Result<(Self, SessionEvent), InitDataError> {
+        let mut session = Session {
+            id: SessionId::generate(),
+            device,
+            state: SessionState::Invalid,
+            keys: vec![],
+        };
+
+        let content_id = init_data_to_content_id(init_data_type, init_data)?;
+        let msg = match server_certificate {
+            None => {
+                session.state = SessionState::AwaitingServiceCert(Box::new(content_id));
+                video_widevine::SignedMessage {
+                    r#type: Some(
+                        video_widevine::signed_message::MessageType::ServiceCertificateRequest
+                            as i32,
+                    ),
+                    ..Default::default()
+                }
+            }
+            Some(cert) => {
+                let (msg, request_bytes) = session.request_license(content_id, Some(cert));
+                session.state = SessionState::AwaitingLicense { request_bytes };
+                msg
+            }
+        };
+
+        Ok((session, SessionEvent::Message(msg.encode_to_vec())))
+    }
+
+    pub fn update(&mut self, message: &[u8]) -> Result<SessionEvent, SessionError> {
+        match std::mem::replace(&mut self.state, SessionState::Invalid) {
+            SessionState::AwaitingServiceCert(cid) => {
+                let cert = parse_service_cert_message(message)?;
+                let (msg, request_bytes) = self.request_license(*cid, Some(&cert));
+                self.state = SessionState::AwaitingLicense { request_bytes };
+                Ok(SessionEvent::Message(msg.encode_to_vec()))
+            }
+            SessionState::AwaitingLicense { request_bytes } => {
+                let new_keys = self.load_license_keys(message, &request_bytes)?;
+                self.state = SessionState::Active;
+                match new_keys {
+                    true => Ok(SessionEvent::KeysChange { new_keys: true }),
+                    false => Ok(SessionEvent::None),
+                }
+            }
+            _ => Err(SessionError::InvalidState),
+        }
+    }
+
+    fn request_license(
+        &self,
+        content_id: video_widevine::license_request::ContentIdentification,
+        server_certificate: Option<&ServerCertificate>,
+    ) -> (video_widevine::SignedMessage, Vec<u8>) {
         let key_control_nonce: u32 = rand::random();
 
         let mut req = video_widevine::LicenseRequest {
-            content_id: Some(init_data_to_content_id(init_data_type, init_data)?),
+            content_id: Some(content_id),
             r#type: Some(video_widevine::license_request::RequestType::New as i32),
             request_time: Some(now()),
             protocol_version: Some(video_widevine::ProtocolVersion::Version21 as i32),
@@ -158,20 +244,24 @@ impl Session {
             .sign_with_rng(&mut rand8::thread_rng(), &req_bytes)
             .to_vec();
 
-        self.request_msg = Some(req_bytes.clone());
-
-        Ok(video_widevine::SignedMessage {
-            r#type: Some(video_widevine::signed_message::MessageType::LicenseRequest as i32),
-            msg: Some(req_bytes),
-            signature: Some(signature),
-            session_key: None,
-            remote_attestation: None,
-            metric_data: vec![],
-        })
+        let req_bytes_for_sig = req_bytes.clone();
+        (
+            video_widevine::SignedMessage {
+                r#type: Some(video_widevine::signed_message::MessageType::LicenseRequest as i32),
+                msg: Some(req_bytes),
+                signature: Some(signature),
+                ..Default::default()
+            },
+            req_bytes_for_sig,
+        )
     }
 
-    pub fn load_license_keys(&mut self, response_bytes: &[u8]) -> Result<bool, LicenseError> {
-        let response = video_widevine::SignedMessage::decode(response_bytes)?;
+    fn load_license_keys(
+        &mut self,
+        message: &[u8],
+        request_bytes: &[u8],
+    ) -> Result<bool, LicenseError> {
+        let response = video_widevine::SignedMessage::decode(message)?;
 
         if response.r#type != Some(video_widevine::signed_message::MessageType::License as i32) {
             return Err(LicenseError::WrongType);
@@ -181,10 +271,7 @@ impl Session {
 
         let padding = rsa::Oaep::new::<sha1::Sha1>();
         let session_key = self.device.private_key.decrypt(padding, &wrapped_key)?;
-        let session_keys = derive_session_keys(
-            self.request_msg.as_ref().ok_or(LicenseError::NoRequest)?,
-            &session_key,
-        )?;
+        let session_keys = derive_session_keys(request_bytes, &session_key)?;
 
         let license_bytes = response.msg.ok_or(LicenseError::NoLicense)?;
 

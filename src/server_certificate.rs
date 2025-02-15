@@ -46,6 +46,21 @@ impl CdmError for ServerCertificateError {
     }
 }
 
+pub fn parse_service_cert_message(
+    message: &[u8],
+) -> Result<ServerCertificate, ServerCertificateError> {
+    let response = video_widevine::SignedMessage::decode(message)?;
+
+    if response.r#type
+        != Some(video_widevine::signed_message::MessageType::ServiceCertificate as i32)
+    {
+        // TODO: Maybe a different type here?
+        return Err(ServerCertificateError::CertificateEmpty);
+    }
+
+    parse_server_certificate(Some(response.msg()))
+}
+
 pub fn parse_server_certificate(
     server_certificate: Option<&[u8]>,
 ) -> Result<ServerCertificate, ServerCertificateError> {

@@ -1,6 +1,5 @@
 use autocxx::subclass::{subclass, CppSubclassSelfOwned};
 use log::{debug, error, info, trace, warn};
-use prost::Message;
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::{null, null_mut};
@@ -9,7 +8,7 @@ use std::sync::OnceLock;
 use crate::decrypt::{decrypt_buf, DecryptError};
 use crate::ffi::cdm;
 use crate::server_certificate::{parse_server_certificate, ServerCertificate};
-use crate::session::{Session, SessionStore};
+use crate::session::{Session, SessionEvent, SessionStore};
 use crate::util::{cstr_from_str, slice_from_c};
 use crate::wvd_file;
 use crate::CdmError;
@@ -195,6 +194,46 @@ impl cdm::Host_10 {
     }
 }
 
+fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm::Host_10>) {
+    let (id_ptr, id_len) = session.id().as_cxx();
+
+    match event {
+        SessionEvent::Message(request) => unsafe {
+            host.as_mut().OnSessionMessage(
+                id_ptr,
+                id_len,
+                cdm::MessageType::kLicenseRequest,
+                request.as_ptr() as _,
+                request.len() as _,
+            );
+        },
+        SessionEvent::KeysChange { new_keys } => {
+            // Build an array of KeyInformation structs that point into keys.
+            let key_infos: Vec<cdm::KeyInformation> = session
+                .keys()
+                .iter()
+                .map(|k| cdm::KeyInformation {
+                    key_id: k.id.as_ptr(),
+                    key_id_size: k.id.len() as _,
+                    status: cdm::KeyStatus::kUsable,
+                    system_code: 0,
+                })
+                .collect();
+
+            unsafe {
+                host.as_mut().OnSessionKeysChange(
+                    id_ptr,
+                    id_len,
+                    new_keys,
+                    key_infos.as_ptr(),
+                    key_infos.len() as _,
+                );
+            }
+        }
+        _ => (),
+    }
+}
+
 impl cdm::ContentDecryptionModule_10_methods for OpenWv {
     fn Initialize(
         &mut self,
@@ -252,32 +291,27 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
             return;
         }
 
-        let mut sess = Session::new(self.device);
-
         let init_data = unsafe { slice_from_c(init_data_raw, init_data_size) }.unwrap();
-        match sess.generate_request(init_data_type, init_data, self.server_cert.as_ref()) {
-            Ok(request) => {
+        match Session::create(
+            self.device,
+            init_data_type,
+            init_data,
+            self.server_cert.as_ref(),
+        ) {
+            Ok((sess, result)) => {
                 let session_id = sess.id();
-
-                self.sessions.add(sess);
-                info!("Registered new session {}", session_id);
-
-                let request_raw = request.encode_to_vec();
                 let (id_ptr, id_len) = session_id.as_cxx();
 
                 unsafe {
                     self.host
                         .as_mut()
                         .OnResolveNewSessionPromise(promise_id, id_ptr, id_len);
-
-                    self.host.as_mut().OnSessionMessage(
-                        id_ptr,
-                        id_len,
-                        cdm::MessageType::kLicenseRequest,
-                        request_raw.as_ptr() as _,
-                        request_raw.len() as _,
-                    );
                 }
+
+                process_event(result, &sess, self.host.as_mut());
+
+                self.sessions.add(sess);
+                info!("Registered new session {}", session_id);
             }
             Err(e) => self.host.as_mut().throw(promise_id, &e),
         }
@@ -318,38 +352,12 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         };
 
         let response = unsafe { slice_from_c(response_raw, response_size as _) }.unwrap();
-        let new_keys = match sess.load_license_keys(response) {
-            Err(e) => {
-                self.host.as_mut().throw(promise_id, &e);
-                return;
+        match sess.update(response) {
+            Ok(result) => {
+                self.host.as_mut().OnResolvePromise(promise_id);
+                process_event(result, sess, self.host.as_mut());
             }
-            Ok(b) => b,
-        };
-
-        self.host.as_mut().OnResolvePromise(promise_id);
-
-        if new_keys {
-            // Build an array of KeyInformation structs that point into keys.
-            let key_infos: Vec<cdm::KeyInformation> = sess
-                .keys()
-                .iter()
-                .map(|k| cdm::KeyInformation {
-                    key_id: k.id.as_ptr(),
-                    key_id_size: k.id.len() as _,
-                    status: cdm::KeyStatus::kUsable,
-                    system_code: 0,
-                })
-                .collect();
-
-            unsafe {
-                self.host.as_mut().OnSessionKeysChange(
-                    session_id,
-                    session_id_size,
-                    new_keys,
-                    key_infos.as_ptr(),
-                    key_infos.len() as _,
-                );
-            }
+            Err(e) => self.host.as_mut().throw(promise_id, &e),
         }
     }
 
