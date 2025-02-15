@@ -59,7 +59,7 @@ impl SessionId {
         Ok(SessionId(id))
     }
 
-    pub unsafe fn as_cxx(&self) -> (*const c_char, u32) {
+    pub fn as_cxx(&self) -> (*const c_char, u32) {
         (self.0.as_ptr() as _, Self::LEN as _)
     }
 }

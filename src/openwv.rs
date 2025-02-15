@@ -433,7 +433,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
             &in_buf.pattern,
         ) {
             Ok(()) => {
-                out_block.as_mut().SetDecryptedBuffer(out_buf_raw);
+                unsafe { out_block.as_mut().SetDecryptedBuffer(out_buf_raw) };
                 out_block.as_mut().SetTimestamp(in_buf.timestamp);
                 cdm::Status::kSuccess
             }
