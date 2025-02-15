@@ -304,7 +304,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         response_size: u32,
     ) {
         debug!("OpenWv({:p}).UpdateSession()", self);
-        let sess = match self.sessions.lookup(session_id, session_id_size) {
+        let sess = match unsafe { self.sessions.lookup(session_id, session_id_size) } {
             Ok(s) => s,
             Err(e) => {
                 self.throw(promise_id, &e);
@@ -355,7 +355,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         session_id_size: u32,
     ) {
         debug!("OpenWv({:p}).CloseSession()", self);
-        match self.sessions.lookup(session_id, session_id_size) {
+        match unsafe { self.sessions.lookup(session_id, session_id_size) } {
             Ok(s) => {
                 let id = s.id();
                 self.sessions.delete(id);
@@ -373,7 +373,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
         session_id_size: u32,
     ) {
         debug!("OpenWv({:p}).RemoveSession()", self);
-        match self.sessions.lookup(session_id, session_id_size) {
+        match unsafe { self.sessions.lookup(session_id, session_id_size) } {
             Ok(s) => {
                 s.clear_licenses();
                 self.host.as_mut().OnResolvePromise(promise_id);

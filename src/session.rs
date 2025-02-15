@@ -297,7 +297,11 @@ impl SessionStore {
         self.0.insert(session.id, session);
     }
 
-    pub fn lookup(&mut self, id: *const c_char, id_len: u32) -> Result<&mut Session, BadSessionId> {
+    pub unsafe fn lookup(
+        &mut self,
+        id: *const c_char,
+        id_len: u32,
+    ) -> Result<&mut Session, BadSessionId> {
         let session_id = unsafe { SessionId::from_cxx(id, id_len) }.or(Err(BadSessionId))?;
         self.0.get_mut(&session_id).ok_or(BadSessionId)
     }
