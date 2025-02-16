@@ -31,7 +31,6 @@ pub fn decrypt_buf(
 
     match (mode, key, iv) {
         (kUnencrypted, _, _) => Ok(()),
-        (_, None, _) => Err(DecryptError::NoKey),
         (kCenc, Some(key), Some(iv)) => {
             let mut decryptor = match iv.len() {
                 len if len < 16 => {
@@ -65,7 +64,8 @@ pub fn decrypt_buf(
                 decrypt_pattern(ciphered, &mut decryptor, pattern_skip, pattern_crypt);
             })
         }
-        _ => Err(DecryptError::NoIv),
+        (_, None, _) => Err(DecryptError::NoKey),
+        (_, _, None) => Err(DecryptError::NoIv),
     }
 }
 
