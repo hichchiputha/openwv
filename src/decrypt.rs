@@ -9,8 +9,8 @@ use crate::keys::ContentKey;
 pub enum DecryptError {
     #[error("key needed but not present")]
     NoKey,
-    #[error("no iv/subsamples provided for ciphered scheme")]
-    NoIvSubsamples,
+    #[error("no iv provided for ciphered scheme")]
+    NoIv,
     #[error("incorrect key or iv length")]
     BadKeyIvLength(#[from] aes::cipher::InvalidLength),
     #[error("integer overflow")]
@@ -29,10 +29,10 @@ pub fn decrypt_buf(
 ) -> Result<(), DecryptError> {
     use cdm::EncryptionScheme::*;
 
-    match (mode, key, iv, subsamples) {
-        (kUnencrypted, _, _, _) => Ok(()),
-        (_, None, _, _) => Err(DecryptError::NoKey),
-        (kCenc, Some(key), Some(iv), Some(subsamples)) => {
+    match (mode, key, iv) {
+        (kUnencrypted, _, _) => Ok(()),
+        (_, None, _) => Err(DecryptError::NoKey),
+        (kCenc, Some(key), Some(iv)) => {
             let mut decryptor = match iv.len() {
                 len if len < 16 => {
                     // IV is only 8 bytes for CTR mode. Chromium zero-pads it
@@ -45,11 +45,11 @@ pub fn decrypt_buf(
                 _ => return Err(aes::cipher::InvalidLength.into()),
             };
 
-            decrypt_subsamples(data, subsamples, |ciphered| {
+            decrypt_possible_subsamples(data, subsamples, |ciphered| {
                 decryptor.apply_keystream(ciphered);
             })
         }
-        (kCbcs, Some(key), Some(iv), Some(subsamples)) => {
+        (kCbcs, Some(key), Some(iv)) => {
             let pattern_skip = usize::try_from(pattern.skip_byte_block)?;
             let mut pattern_crypt = usize::try_from(pattern.crypt_byte_block)?;
 
@@ -61,19 +61,25 @@ pub fn decrypt_buf(
             let mut decryptor =
                 cbc::Decryptor::<aes::Aes128>::new_from_slices(key.data.as_slice(), iv)?;
 
-            decrypt_subsamples(data, subsamples, |ciphered| {
+            decrypt_possible_subsamples(data, subsamples, |ciphered| {
                 decrypt_pattern(ciphered, &mut decryptor, pattern_skip, pattern_crypt);
             })
         }
-        _ => Err(DecryptError::NoIvSubsamples),
+        _ => Err(DecryptError::NoIv),
     }
 }
 
-fn decrypt_subsamples(
+fn decrypt_possible_subsamples(
     data: &mut [u8],
-    subsamples: &[cdm::SubsampleEntry],
+    subsamples_opt: Option<&[cdm::SubsampleEntry]>,
     mut decrypt: impl FnMut(&mut [u8]),
 ) -> Result<(), DecryptError> {
+    // If there aren't any subsamples, our job is really easy.
+    let Some(subsamples) = subsamples_opt else {
+        decrypt(data);
+        return Ok(());
+    };
+
     let mut remaining = data;
     for subsample in subsamples {
         let ciphered_start = usize::try_from(subsample.clear_bytes)?;
