@@ -7,7 +7,7 @@ mod init_data;
 mod keys;
 mod license;
 mod openwv;
-mod server_certificate;
+mod service_certificate;
 mod session;
 mod wvd_file;
 

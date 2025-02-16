@@ -9,7 +9,7 @@ use crate::ffi::cdm;
 use crate::init_data::{init_data_to_content_id, InitDataError};
 use crate::keys::ContentKey;
 use crate::license::{load_license_keys, request_license, LicenseError};
-use crate::server_certificate::{
+use crate::service_certificate::{
     parse_service_cert_message, ServerCertificate, ServerCertificateError,
 };
 use crate::util::slice_from_c;

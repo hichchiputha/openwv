@@ -7,7 +7,7 @@ use std::sync::OnceLock;
 
 use crate::decrypt::{decrypt_buf, DecryptError};
 use crate::ffi::cdm;
-use crate::server_certificate::{parse_server_certificate, ServerCertificate};
+use crate::service_certificate::{parse_service_certificate, ServerCertificate};
 use crate::session::{Session, SessionEvent, SessionStore};
 use crate::util::{cstr_from_str, slice_from_c};
 use crate::wvd_file;
@@ -263,7 +263,7 @@ impl cdm::ContentDecryptionModule_10_methods for OpenWv {
 
         let server_certificate =
             unsafe { slice_from_c(server_certificate_data, server_certificate_data_size) };
-        match parse_server_certificate(server_certificate) {
+        match parse_service_certificate(server_certificate) {
             Ok(cert) => {
                 self.server_cert = Some(cert);
                 self.host.as_mut().OnResolvePromise(promise_id);

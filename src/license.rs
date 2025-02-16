@@ -8,7 +8,7 @@ use thiserror::Error;
 
 use crate::ffi::cdm;
 use crate::keys::ContentKey;
-use crate::server_certificate::{encrypt_client_id, ServerCertificate};
+use crate::service_certificate::{encrypt_client_id, ServerCertificate};
 use crate::util::now;
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;

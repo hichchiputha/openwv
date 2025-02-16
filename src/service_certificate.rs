@@ -10,7 +10,7 @@ use crate::ffi::cdm;
 use crate::video_widevine;
 use crate::CdmError;
 
-const ROOT_PUBKEY: &[u8] = include_bytes!("server_certificate_root.der");
+const ROOT_PUBKEY: &[u8] = include_bytes!("service_certificate_root.der");
 
 /// This is like [`video_widevine::DrmDeviceCertificate`] but with no optional
 /// fields, for infallible Client ID enccryption.
@@ -58,10 +58,10 @@ pub fn parse_service_cert_message(
         return Err(ServerCertificateError::CertificateEmpty);
     }
 
-    parse_server_certificate(Some(response.msg()))
+    parse_service_certificate(Some(response.msg()))
 }
 
-pub fn parse_server_certificate(
+pub fn parse_service_certificate(
     server_certificate: Option<&[u8]>,
 ) -> Result<ServerCertificate, ServerCertificateError> {
     let signed_cert_bytes = match server_certificate {
