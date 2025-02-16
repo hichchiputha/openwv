@@ -1,5 +1,6 @@
 use aes::cipher::BlockEncryptMut;
 use aes::cipher::KeyIvInit;
+use log::info;
 use prost::Message;
 use rand::Rng;
 use rsa::pkcs1::DecodeRsaPublicKey;
@@ -93,7 +94,7 @@ pub fn parse_service_certificate(
         return Err(ServerCertificateError::WrongType(cert_type));
     }
 
-    Ok(ServerCertificate {
+    let res = ServerCertificate {
         key: rsa::RsaPublicKey::from_pkcs1_der(cert.public_key())?,
         serial_number: cert
             .serial_number
@@ -101,7 +102,11 @@ pub fn parse_service_certificate(
         provider_id: cert
             .provider_id
             .ok_or(ServerCertificateError::MissingFields)?,
-    })
+    };
+
+    info!("Service certificate provider: {}", res.provider_id);
+
+    Ok(res)
 }
 
 pub fn encrypt_client_id(
