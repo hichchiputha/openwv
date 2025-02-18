@@ -73,7 +73,7 @@ pub fn init_data_to_content_id(
     }
 }
 
-fn safe_slice<I>(buf: &[u8], idx: I) -> Result<&I::Output, InitDataError>
+fn checked_slice<I>(buf: &[u8], idx: I) -> Result<&I::Output, InitDataError>
 where
     I: std::slice::SliceIndex<[u8]>,
 {
@@ -86,20 +86,20 @@ fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
     let mut remaining = boxes;
 
     while !remaining.is_empty() {
-        let mut box_size: u64 = BE::read_u32(safe_slice(remaining, 0..4)?).into();
-        let box_type = safe_slice(remaining, 4..8)?;
+        let mut box_size: u64 = BE::read_u32(checked_slice(remaining, 0..4)?).into();
+        let box_type = checked_slice(remaining, 4..8)?;
 
         let (payload_start, payload_end) = match box_size {
             // To end of file
             0 => (8, remaining.len()),
             // Extended size field
             1 => {
-                box_size = BE::read_u64(safe_slice(remaining, 8..16)?);
+                box_size = BE::read_u64(checked_slice(remaining, 8..16)?);
                 (16, box_size.try_into()?)
             }
             _ => (8, box_size.try_into()?),
         };
-        let box_payload = safe_slice(remaining, payload_start..payload_end)?;
+        let box_payload = checked_slice(remaining, payload_start..payload_end)?;
 
         match box_type {
             b"pssh" => {
@@ -119,13 +119,13 @@ fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
 }
 
 fn parse_pssh_box(data: &[u8]) -> Result<Option<&[u8]>, InitDataError> {
-    let version = *safe_slice(data, 0)?;
+    let version = *checked_slice(data, 0)?;
     if version != 0 {
         info!("Skipping PSSH box with unknown version {}", version);
         return Ok(None);
     }
 
-    let system_id = Uuid::from_slice(safe_slice(data, 4..20)?).unwrap();
+    let system_id = Uuid::from_slice(checked_slice(data, 4..20)?).unwrap();
     if system_id != WIDEVINE_SYSTEMID {
         info!(
             "Skipping PSSH box with non-Widevine system ID {}",
@@ -134,8 +134,8 @@ fn parse_pssh_box(data: &[u8]) -> Result<Option<&[u8]>, InitDataError> {
         return Ok(None);
     }
 
-    let payload_size = BE::read_u32(safe_slice(data, 20..24)?);
-    let payload = safe_slice(&data[24..], ..payload_size.try_into()?)?;
+    let payload_size = BE::read_u32(checked_slice(data, 20..24)?);
+    let payload = checked_slice(&data[24..], ..payload_size.try_into()?)?;
     Ok(Some(payload))
 }
 
