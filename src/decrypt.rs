@@ -16,7 +16,7 @@ pub enum DecryptError {
     #[error("integer overflow")]
     Overflow(#[from] std::num::TryFromIntError),
     #[error("subsamples exceed data length")]
-    TooShort,
+    ShortData,
 }
 
 pub fn decrypt_buf(
@@ -86,7 +86,7 @@ fn decrypt_possible_subsamples(
         let ciphered_end = ciphered_start + usize::try_from(subsample.cipher_bytes)?;
         let ciphered = remaining
             .get_mut(ciphered_start..ciphered_end)
-            .ok_or(DecryptError::TooShort)?;
+            .ok_or(DecryptError::ShortData)?;
 
         decrypt(ciphered);
 
