@@ -89,16 +89,17 @@ fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
         let mut box_size: u64 = BE::read_u32(safe_slice(remaining, 0..4)?).into();
         let box_type = safe_slice(remaining, 4..8)?;
 
-        let box_payload = match box_size {
+        let (payload_start, payload_end) = match box_size {
             // To end of file
-            0 => safe_slice(remaining, 8..)?,
+            0 => (8, remaining.len()),
             // Extended size field
             1 => {
                 box_size = BE::read_u64(safe_slice(remaining, 8..16)?);
-                safe_slice(remaining, 16..box_size.try_into()?)?
+                (16, box_size.try_into()?)
             }
-            _ => safe_slice(remaining, 8..box_size.try_into()?)?,
+            _ => (8, box_size.try_into()?),
         };
+        let box_payload = safe_slice(remaining, payload_start..payload_end)?;
 
         match box_type {
             b"pssh" => {
@@ -112,7 +113,7 @@ fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
             ),
         }
 
-        remaining = &remaining[box_payload.len()..];
+        remaining = &remaining[payload_end..];
     }
     Err(InitDataError::NoValidPssh)
 }
