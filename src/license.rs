@@ -134,7 +134,7 @@ pub fn load_license_keys(
             key_type: key.r#type,
         };
 
-        info!("Loaded content key: {}", &new_key);
+        info!("Loaded key: {}", &new_key);
         keys.push(new_key);
         added_keys = true;
     }

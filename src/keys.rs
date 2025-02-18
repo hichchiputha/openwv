@@ -16,7 +16,7 @@ impl Display for ContentKey {
             write!(f, "{:02x}", b)?;
         }
         if let Some(t) = self.key_type {
-            write!(f, " [{}]", t)?;
+            write!(f, " [type {}]", t)?;
         }
         Ok(())
     }
