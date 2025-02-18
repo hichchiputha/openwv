@@ -1,5 +1,5 @@
 use byteorder::{ByteOrder, BE};
-use log::warn;
+use log::{info, warn};
 use thiserror::Error;
 use uuid::{uuid, Uuid};
 
@@ -121,13 +121,13 @@ fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
 fn parse_pssh_box(data: &[u8]) -> Result<Option<&[u8]>, InitDataError> {
     let version = *safe_slice(data, 0)?;
     if version != 0 {
-        warn!("Skipping PSSH box with unknown version {}", version);
+        info!("Skipping PSSH box with unknown version {}", version);
         return Ok(None);
     }
 
     let system_id = Uuid::from_slice(safe_slice(data, 4..20)?).unwrap();
     if system_id != WIDEVINE_SYSTEMID {
-        warn!(
+        info!(
             "Skipping PSSH box with non-Widevine system ID {}",
             system_id
         );
