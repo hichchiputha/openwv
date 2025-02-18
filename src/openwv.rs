@@ -212,11 +212,13 @@ fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm:
             let key_infos: Vec<cdm::KeyInformation> = session
                 .keys()
                 .iter()
-                .map(|k| cdm::KeyInformation {
-                    key_id: k.id.as_ptr(),
-                    key_id_size: k.id.len() as _,
-                    status: cdm::KeyStatus::kUsable,
-                    system_code: 0,
+                .filter_map(|k| {
+                    k.id.as_ref().map(|id| cdm::KeyInformation {
+                        key_id: id.as_ptr(),
+                        key_id_size: id.len() as _,
+                        status: cdm::KeyStatus::kUsable,
+                        system_code: 0,
+                    })
                 })
                 .collect();
 

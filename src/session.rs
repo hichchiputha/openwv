@@ -218,7 +218,10 @@ impl SessionStore {
         // A linear search of each session's keys is probably in practice
         // faster than a HashMap would be, given that we expect each session
         // to have on the order of 10 keys at most.
-        self.0.values().flat_map(|s| &s.keys).find(|&k| k.id == id)
+        self.0
+            .values()
+            .flat_map(|s| &s.keys)
+            .find(|&k| k.id.as_ref().is_some_and(|x| x == id))
     }
 
     pub fn delete(&mut self, id: SessionId) -> bool {

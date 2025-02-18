@@ -129,7 +129,7 @@ pub fn load_license_keys(
         data.truncate(new_size);
 
         let new_key = ContentKey {
-            id: key.id.unwrap_or_default(),
+            id: key.id,
             data,
             key_type: key.r#type,
         };

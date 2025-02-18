@@ -1,17 +1,19 @@
 use std::fmt::Display;
 
 pub struct ContentKey {
-    pub id: Vec<u8>,
+    pub id: Option<Vec<u8>>,
     pub data: Vec<u8>,
     pub key_type: Option<i32>,
 }
 
 impl Display for ContentKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for b in &self.id {
-            write!(f, "{:02x}", b)?;
+        if let Some(id) = &self.id {
+            for b in id {
+                write!(f, "{:02x}", b)?;
+            }
+            write!(f, ":")?;
         }
-        write!(f, ":")?;
         for b in &self.data {
             write!(f, "{:02x}", b)?;
         }
