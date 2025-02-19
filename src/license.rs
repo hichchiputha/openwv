@@ -25,8 +25,8 @@ pub enum LicenseError {
     NoSessionKey,
     #[error("couldn't decrypt key")]
     BadSessionKeyCrypto(#[from] rsa::Error),
-    #[error("session key wrong length")]
-    BadSessionKeyLength(#[from] cmac::digest::InvalidLength),
+    #[error("incorrect key or iv length")]
+    BadKeyIvLength(#[from] aes::cipher::InvalidLength),
     #[error("no signature for SignedMessage")]
     NoSignature,
     #[error("could not verify signature")]
@@ -122,7 +122,7 @@ pub fn load_license_keys(
         };
 
         let decryptor =
-            cbc::Decryptor::<aes::Aes128>::new_from_slices(&session_keys.encryption, &iv).unwrap();
+            cbc::Decryptor::<aes::Aes128>::new_from_slices(&session_keys.encryption, &iv)?;
         let new_size = decryptor
             .decrypt_padded_mut::<aes::cipher::block_padding::Pkcs7>(data.as_mut_slice())?
             .len();
