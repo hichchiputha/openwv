@@ -30,7 +30,7 @@ extern "C" fn InitializeCdmModule_4() {
     let log_env = env_logger::Env::new()
         .filter_or("OPENWV_LOG", "info")
         .write_style("OPENWV_LOG_STYLE");
-    env_logger::init_from_env(log_env);
+    let _ = env_logger::try_init_from_env(log_env);
     debug!("InitializeCdmModule()");
 
     let mut embedded_wvd = std::io::Cursor::new(EMBEDDED_WVD);
