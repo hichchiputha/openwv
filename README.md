@@ -23,6 +23,9 @@
    a directory named `{linux,win,mac}_{x86,x64,arm,arm64}`, as appropriate,
    inside it. For example, `_platform_specific/linux_x64/` on 64-bit Intel
    Linux. Place OpenWV's `libwidevinecdm.so` in this innermost directory.
+6. On Linux only, launch and quit the browser once before playing any Widevine-
+   protected media. OpenWV will not be loaded on the first launch, due to an
+   [implementation quirk][chromium-hint] of Chromium.
 
 ### Kodi (via [InputStream Adaptive](https://github.com/xbmc/inputstream.adaptive))
 1. In Kodi, navigate to "Add-ons > My add-ons > VideoPlayer InputStream >
@@ -30,6 +33,8 @@
 2. Ensure the settings level (the gear icon) is set to at least "Advanced".
 3. In the "Expert" tab, set "Decrypter path" to the directory where you've put
    OpenWV's `libwidevinecdm.so`. Don't include the filename itself.
+
+[chromium-hint]: https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/media/cdm_registration.cc;l=163-187;drc=e1e92741ef5eac000a66a712ae1af2c44781bc40
 
 ## References
 
