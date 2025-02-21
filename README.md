@@ -7,9 +7,9 @@
    other name for the directory you create in step 3).
 2. Navigate to `gmp-widevinecdm/` within your profile directory.
 3. Create a subdirectory named `openwv` and place OpenWV's `libwidevinecdm.so`
-   and `manifest.json` directly inside it. Note that you **must** use OpenWV's
-   `manifest.json` instead of Google's, as Firefox uses the manifest to
-   determine what video codecs a CDM supports.
+   and `manifest-firefox.json`, named `manifest.json` inside it. Note that you
+   **must** use OpenWV's `manifest.json` instead of Google's, as Firefox uses
+   the manifest to determine what video codecs a CDM supports.
 
 ### Chrome/Chromium
 1. Open `chrome://version/` and note the **parent** directory of your "Profile
@@ -17,7 +17,8 @@
 2. Navigate to `WidevineCdm/` within the user data directory.
 3. If there are any existing subdirectories, delete them.
 4. Create a subdirectory named `9999` (or any numeric version greater than that
-   of Google's CDM), and place OpenWV's `manifest.json` directly inside it.
+   of Google's CDM), and place OpenWV's `manifest-chromium.json`, named
+   `manifest.json`, inside it.
 5. Beside `manifest.json`, create a directory named `_platform_specific` with
    a directory named `{linux,win,mac}_{x86,x64,arm,arm64}`, as appropriate,
    inside it. For example, `_platform_specific/linux_x64/` on 64-bit Intel
