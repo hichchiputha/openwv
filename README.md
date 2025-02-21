@@ -1,5 +1,5 @@
-References
-----------
+## References
+
 The APIs, algorithms, and data types used in OpenWV were gathered from a variety of official and
 unofficial sources:
 
