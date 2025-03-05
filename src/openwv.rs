@@ -9,7 +9,7 @@ use crate::decrypt::{decrypt_buf, DecryptError};
 use crate::ffi::cdm;
 use crate::service_certificate::{parse_service_certificate, ServerCertificate};
 use crate::session::{Session, SessionEvent, SessionStore};
-use crate::util::{cstr_from_str, slice_from_c};
+use crate::util::{cstr_from_str, slice_from_c, try_init_logging};
 use crate::wvd_file;
 use crate::CdmError;
 
@@ -27,10 +27,7 @@ const EMBEDDED_WVD: &[u8] = include_bytes!("embedded.wvd");
 
 #[no_mangle]
 extern "C" fn InitializeCdmModule_4() {
-    let log_env = env_logger::Env::new()
-        .filter_or("OPENWV_LOG", "info")
-        .write_style("OPENWV_LOG_STYLE");
-    let _ = env_logger::try_init_from_env(log_env);
+    try_init_logging();
     debug!("InitializeCdmModule()");
 
     let mut embedded_wvd = std::io::Cursor::new(EMBEDDED_WVD);
