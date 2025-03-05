@@ -15,8 +15,8 @@ use openwv::OpenWv;
 include_cpp! {
     #include "content_decryption_module.h"
     safety!(unsafe)
-    subclass!("cdm::ContentDecryptionModule_10", OpenWv)
-    generate!("cdm::Host_10")
+    subclass!("cdm::ContentDecryptionModule_11", OpenWv)
+    generate!("cdm::Host_11")
     generate!("cdm::Buffer")
     generate!("cdm::DecryptedBlock")
     generate_pod!("cdm::KeyInformation")

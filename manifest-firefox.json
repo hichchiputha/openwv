@@ -4,8 +4,8 @@
   "description": "OpenWV Widevine-compatible CDM",
   "version": "1",
   "x-cdm-module-versions": "4",
-  "x-cdm-interface-versions": "10",
-  "x-cdm-host-versions": "10",
+  "x-cdm-interface-versions": "11",
+  "x-cdm-host-versions": "11",
   "x-cdm-codecs": "",
   "x-cdm-persistent-license-support": false,
   "x-cdm-supported-encryption-schemes": [

@@ -14,7 +14,7 @@ use crate::wvd_file;
 use crate::CdmError;
 
 // To change this, also change ContentDecryptionModule_NN and Host_NN.
-const CDM_INTERFACE: c_int = 10;
+const CDM_INTERFACE: c_int = 11;
 
 // Holds the private key and client ID we use for license requests. Loaded once
 // during InitializeCdmModule() and referenced by all subsequently-created
@@ -60,7 +60,7 @@ unsafe extern "C" fn CreateCdmInstance(
     key_system_size: u32,
     get_cdm_host_func: Option<GetCdmHostFunc>,
     user_data: *mut c_void,
-) -> *mut cdm::ContentDecryptionModule_10 {
+) -> *mut cdm::ContentDecryptionModule_11 {
     debug!("CreateCdmInstance()");
 
     if cdm_interface_version != CDM_INTERFACE {
@@ -91,7 +91,7 @@ unsafe extern "C" fn CreateCdmInstance(
 
     // SAFETY: API contract requires that `get_cdm_host_func` returns an
     // appropriate C++ Host_NN object.
-    let host_raw: *mut cdm::Host_10 = match get_cdm_host_func {
+    let host_raw: *mut cdm::Host_11 = match get_cdm_host_func {
         None => {
             error!("Got NULL get_cdm_host_func pointer");
             return null_mut();
@@ -145,14 +145,14 @@ use crate::ffi;
 
 #[subclass(self_owned)]
 pub struct OpenWv {
-    host: Pin<&'static mut cdm::Host_10>,
+    host: Pin<&'static mut cdm::Host_11>,
     sessions: SessionStore,
     device: &'static wvd_file::WidevineDevice,
     server_cert: Option<ServerCertificate>,
     allow_persistent_state: bool,
 }
 
-impl cdm::Host_10 {
+impl cdm::Host_11 {
     fn reject(
         self: Pin<&mut Self>,
         promise_id: u32,
@@ -194,7 +194,7 @@ impl cdm::Host_10 {
     }
 }
 
-fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm::Host_10>) {
+fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm::Host_11>) {
     let (id_ptr, id_len) = session.id().as_cxx();
 
     match event {
@@ -236,7 +236,7 @@ fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm:
     }
 }
 
-impl cdm::ContentDecryptionModule_10_methods for OpenWv {
+impl cdm::ContentDecryptionModule_11_methods for OpenWv {
     fn Initialize(
         &mut self,
         _allow_distinctive_identifier: bool,
