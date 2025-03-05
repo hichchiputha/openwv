@@ -373,7 +373,9 @@ impl cdm::ContentDecryptionModule_11_methods for OpenWv {
                 self.sessions.delete(id);
                 info!("Deleted session {}", id);
                 self.host.as_mut().OnResolvePromise(promise_id);
-                self.host.as_mut().OnSessionClosed(session_id, session_id_size);
+                self.host
+                    .as_mut()
+                    .OnSessionClosed(session_id, session_id_size);
             }
             Err(e) => self.host.as_mut().throw(promise_id, &e),
         };
