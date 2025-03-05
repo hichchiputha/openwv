@@ -9,7 +9,7 @@ authors = ["Thomas Hebb <tommyhebb@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-autocxx = "0.27"
+autocxx = "0.30"
 cxx = "1"
 prost = "0.13"
 thiserror = "2"
@@ -32,7 +32,7 @@ cbc = { version = "0.1", features = ["std"] }
 ctr = { version = "0.9", features = ["std"] }
 
 [build-dependencies]
-autocxx-build = { git = "https://github.com/google/autocxx.git" }
+autocxx-build = "0.30"
 prost-build = "0.13"
 thiserror = "2"
 
