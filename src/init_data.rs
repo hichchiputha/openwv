@@ -1,12 +1,12 @@
-use byteorder::{ByteOrder, BE};
+use byteorder::{BE, ByteOrder};
 use log::{info, warn};
 use thiserror::Error;
-use uuid::{uuid, Uuid};
+use uuid::{Uuid, uuid};
 
-use crate::ffi::cdm::InitDataType;
-use crate::video_widevine::license_request::{content_identification, ContentIdentification};
-use crate::video_widevine::LicenseType;
 use crate::CdmError;
+use crate::ffi::cdm::InitDataType;
+use crate::video_widevine::LicenseType;
+use crate::video_widevine::license_request::{ContentIdentification, content_identification};
 
 // From https://dashif.org/identifiers/content_protection/
 const WIDEVINE_SYSTEMID: Uuid = uuid!("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed");

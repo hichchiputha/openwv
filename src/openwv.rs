@@ -1,17 +1,17 @@
-use autocxx::subclass::{subclass, CppSubclassSelfOwned};
+use autocxx::subclass::{CppSubclassSelfOwned, subclass};
 use log::{debug, error, info, trace, warn};
 use std::ffi::{c_char, c_int, c_uchar, c_void};
 use std::pin::Pin;
 use std::ptr::{null, null_mut};
 use std::sync::OnceLock;
 
-use crate::decrypt::{decrypt_buf, DecryptError};
+use crate::CdmError;
+use crate::decrypt::{DecryptError, decrypt_buf};
 use crate::ffi::cdm;
-use crate::service_certificate::{parse_service_certificate, ServerCertificate};
+use crate::service_certificate::{ServerCertificate, parse_service_certificate};
 use crate::session::{Session, SessionEvent, SessionStore};
 use crate::util::{cstr_from_str, slice_from_c, try_init_logging};
 use crate::wvd_file;
-use crate::CdmError;
 
 // To change this, also change ContentDecryptionModule_NN and Host_NN.
 const CDM_INTERFACE: c_int = 11;
@@ -25,7 +25,7 @@ static DEVICE: OnceLock<wvd_file::WidevineDevice> = OnceLock::new();
 // embed it because the Firefox GMP sandbox forbids filesystem reads.
 const EMBEDDED_WVD: &[u8] = include_bytes!("embedded.wvd");
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn InitializeCdmModule_4() {
     try_init_logging();
     debug!("InitializeCdmModule()");
@@ -43,14 +43,14 @@ extern "C" fn InitializeCdmModule_4() {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn DeinitializeCdmModule() {
     debug!("DeinitializeCdmModule()");
 }
 
 const WV_KEY_SYSTEM: &[u8] = b"com.widevine.alpha";
 type GetCdmHostFunc = unsafe extern "C" fn(c_int, *mut c_void) -> *mut c_void;
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn CreateCdmInstance(
     cdm_interface_version: c_int,
     key_system: *const c_char,
@@ -131,7 +131,7 @@ unsafe extern "C" fn CreateCdmInstance(
 
 const VERSION_STR: &std::ffi::CStr =
     cstr_from_str(concat!("OpenWV version ", env!("CARGO_PKG_VERSION"), "\0"));
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn GetCdmVersion() -> *const c_char {
     VERSION_STR.as_ptr()
 }
@@ -373,9 +373,11 @@ impl cdm::ContentDecryptionModule_11_methods for OpenWv {
                 self.sessions.delete(id);
                 info!("Deleted session {}", id);
                 self.host.as_mut().OnResolvePromise(promise_id);
-                self.host
-                    .as_mut()
-                    .OnSessionClosed(session_id, session_id_size);
+                unsafe {
+                    self.host
+                        .as_mut()
+                        .OnSessionClosed(session_id, session_id_size);
+                }
             }
             Err(e) => self.host.as_mut().throw(promise_id, &e),
         };

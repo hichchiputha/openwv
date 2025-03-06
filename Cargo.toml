@@ -6,7 +6,7 @@ license = "LGPL-3.0-only"
 description = "Open reimplementation of Google's libwidevinecdm.so Content Decryption Module"
 authors = ["Thomas Hebb <tommyhebb@gmail.com>"]
 
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 autocxx = "0.30"

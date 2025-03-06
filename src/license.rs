@@ -1,18 +1,18 @@
 use aes::cipher::{BlockDecryptMut, KeyIvInit};
-use byteorder::{ByteOrder, BE};
+use byteorder::{BE, ByteOrder};
 use cmac::Mac;
 use log::info;
 use prost::Message;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use thiserror::Error;
 
+use crate::CdmError;
 use crate::ffi::cdm;
 use crate::keys::ContentKey;
-use crate::service_certificate::{encrypt_client_id, ServerCertificate};
+use crate::service_certificate::{ServerCertificate, encrypt_client_id};
 use crate::util::now;
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;
-use crate::CdmError;
 
 #[derive(Error, Debug)]
 #[non_exhaustive]

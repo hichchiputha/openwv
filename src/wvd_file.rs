@@ -1,4 +1,4 @@
-use byteorder::{ReadBytesExt, BE};
+use byteorder::{BE, ReadBytesExt};
 use prost::Message;
 use rsa::pkcs1::DecodeRsaPrivateKey;
 use std::io::Read;

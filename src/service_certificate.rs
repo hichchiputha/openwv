@@ -7,9 +7,9 @@ use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::signature::Verifier;
 use thiserror::Error;
 
+use crate::CdmError;
 use crate::ffi::cdm;
 use crate::video_widevine;
-use crate::CdmError;
 
 const ROOT_PUBKEY: &[u8] = include_bytes!("service_certificate_root.der");
 

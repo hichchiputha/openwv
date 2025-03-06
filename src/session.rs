@@ -5,17 +5,17 @@ use std::ffi::c_char;
 use std::fmt::Display;
 use thiserror::Error;
 
+use crate::CdmError;
 use crate::ffi::cdm;
-use crate::init_data::{init_data_to_content_id, InitDataError};
+use crate::init_data::{InitDataError, init_data_to_content_id};
 use crate::keys::ContentKey;
-use crate::license::{load_license_keys, request_license, LicenseError};
+use crate::license::{LicenseError, load_license_keys, request_license};
 use crate::service_certificate::{
-    parse_service_cert_message, ServerCertificate, ServerCertificateError,
+    ServerCertificate, ServerCertificateError, parse_service_cert_message,
 };
 use crate::util::slice_from_c;
 use crate::video_widevine;
 use crate::wvd_file::WidevineDevice;
-use crate::CdmError;
 
 /// Represents a session ID. We want this both to be copyable (so ideally
 /// entirely stack-allocated) and passable to C++ as a NUL-terminated string,
