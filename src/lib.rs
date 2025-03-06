@@ -4,6 +4,7 @@
 
 use autocxx::include_cpp;
 
+mod config;
 mod util;
 
 mod decrypt;

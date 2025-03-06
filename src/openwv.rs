@@ -6,6 +6,7 @@ use std::ptr::{null, null_mut};
 use std::sync::OnceLock;
 
 use crate::CdmError;
+use crate::config::CONFIG;
 use crate::decrypt::{DecryptError, decrypt_buf};
 use crate::ffi::cdm;
 use crate::service_certificate::{ServerCertificate, parse_service_certificate};
@@ -21,16 +22,12 @@ const CDM_INTERFACE: c_int = 11;
 // Session structs.
 static DEVICE: OnceLock<wvd_file::WidevineDevice> = OnceLock::new();
 
-// Ideally, we'd read this dynamically from the filesystem, but currently we
-// embed it because the Firefox GMP sandbox forbids filesystem reads.
-const EMBEDDED_WVD: &[u8] = include_bytes!("embedded.wvd");
-
 #[unsafe(no_mangle)]
 extern "C" fn InitializeCdmModule_4() {
     try_init_logging();
     debug!("InitializeCdmModule()");
 
-    let mut embedded_wvd = std::io::Cursor::new(EMBEDDED_WVD);
+    let mut embedded_wvd = std::io::Cursor::new(CONFIG.widevine_device);
     match wvd_file::parse_wvd(&mut embedded_wvd) {
         Ok(dev) => {
             if DEVICE.set(dev).is_err() {

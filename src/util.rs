@@ -3,6 +3,8 @@ use std::io::Write;
 use std::slice::from_raw_parts;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use crate::config::CONFIG;
+
 pub fn try_init_logging() -> bool {
     let mut builder: env_logger::Builder = env_logger::Builder::new();
 
@@ -21,7 +23,7 @@ pub fn try_init_logging() -> bool {
         .write_style("OPENWV_LOG_STYLE");
 
     builder
-        .filter_level(log::LevelFilter::Info)
+        .filter_level(CONFIG.log_level)
         .parse_env(env)
         .try_init()
         .is_ok()
