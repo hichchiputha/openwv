@@ -167,8 +167,8 @@ impl cdm::Host_11 {
     fn throw(self: Pin<&mut Self>, promise_id: u32, e: &(impl std::error::Error + CdmError)) {
         warn!("Returning API error: {}", e);
 
-        // Need to keep this alive until after the FFI call, or else we'll be
-        // passing a dangling pointer.
+        // SAFETY: This CString cannot be a temporary, as it must live until
+        // after the OnRejectPromise() FFI call.
         let msg_str = std::ffi::CString::new(e.to_string()).ok();
 
         let (msg_ptr, msg_size) = match &msg_str {
@@ -189,7 +189,10 @@ impl cdm::Host_11 {
 }
 
 fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm::Host_11>) {
-    let (id_ptr, id_len) = session.id().as_cxx();
+    // SAFETY: This SessionId cannot be a temporary, as it must live until after
+    // the various FFI calls below.
+    let session_id = session.id();
+    let (id_ptr, id_len) = session_id.as_cxx();
 
     match event {
         SessionEvent::Message(request) => unsafe {
