@@ -3,7 +3,7 @@
 *NOTE: In these instructions, "the OpenWV library" means `libwidevinecdm.so` on
 Linux, `widevinecdm.dll` on Windows, and `libwidevinecdm.dylib` on macOS.*
 
-### Firefox
+### Firefox (version 136+ only)
 1. Open `about:support` and note your "Profile Directory".
 2. Open `about:config`. Set `media.gmp-widevinecdm.autoupdate` to `false`
    (creating it if needed), and set `media.gmp-widevinecdm.version` to `openwv`
