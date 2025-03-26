@@ -78,6 +78,7 @@ impl CdmError for BadSessionId {
 }
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum SessionError {
     #[error("update is not valid for state")]
     InvalidState,
