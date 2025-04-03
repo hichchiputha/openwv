@@ -6,6 +6,7 @@ use std::fmt::Display;
 use thiserror::Error;
 
 use crate::CdmError;
+use crate::config::{CONFIG, EncryptClientId};
 use crate::ffi::cdm;
 use crate::init_data::{InitDataError, init_data_to_content_id};
 use crate::keys::ContentKey;
@@ -131,11 +132,17 @@ impl Session {
         device: &'static WidevineDevice,
         init_data_type: cdm::InitDataType,
         init_data: &[u8],
-        server_certificate: Option<&ServerCertificate>,
+        mut server_certificate: Option<&ServerCertificate>,
     ) -> Result<(Self, SessionEvent), InitDataError> {
+        // If we've been asked never to encrypt, pretend we weren't given a
+        // server certificate.
+        if let EncryptClientId::Never = CONFIG.encrypt_client_id {
+            server_certificate = None;
+        }
+
         let content_id = init_data_to_content_id(init_data_type, init_data)?;
-        let (msg, state) = match server_certificate {
-            None => (
+        let (msg, state) = match (CONFIG.encrypt_client_id, server_certificate) {
+            (EncryptClientId::Always, None) => (
                 video_widevine::SignedMessage {
                     r#type: Some(
                         video_widevine::signed_message::MessageType::ServiceCertificateRequest
@@ -145,8 +152,8 @@ impl Session {
                 },
                 SessionState::AwaitingServiceCert(Box::new(content_id)),
             ),
-            Some(cert) => {
-                let (msg, request_bytes) = request_license(content_id, Some(cert), device);
+            (_, cert) => {
+                let (msg, request_bytes) = request_license(content_id, cert, device);
                 (msg, SessionState::AwaitingLicense { request_bytes })
             }
         };
