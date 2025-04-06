@@ -11,7 +11,7 @@ use crate::CdmError;
 use crate::ffi::cdm;
 use crate::video_widevine;
 
-const ROOT_PUBKEY: &[u8] = include_bytes!("service_certificate_root.der");
+const ROOT_PUBKEY: &[u8] = include_bytes!("../third-party/service_certificate_root.der");
 
 /// This is like [`video_widevine::DrmDeviceCertificate`] but with no optional
 /// fields, for infallible Client ID enccryption.

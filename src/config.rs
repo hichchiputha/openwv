@@ -3,7 +3,7 @@
 /// go in a configuration file. See the comments on the structs and enums below
 /// for information on the meaning of each parameter.
 pub const CONFIG: OpenWvConfig = OpenWvConfig {
-    widevine_device: include_bytes!("embedded.wvd"),
+    widevine_device: include_bytes!("../embedded.wvd"),
     log_level: log::LevelFilter::Info,
     encrypt_client_id: EncryptClientId::Always,
 };
