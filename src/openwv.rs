@@ -281,7 +281,6 @@ impl cdm::ContentDecryptionModule_11_methods for OpenWv {
     ) {
         debug!("OpenWv({:p}).CreateSessionAndGenerateRequest()", self);
         if session_type == cdm::SessionType::kPersistentLicense && !self.allow_persistent_state {
-            // TODO: error details, better error framework
             self.host.as_mut().reject(
                 promise_id,
                 cdm::Exception::kExceptionNotSupportedError,
