@@ -5,7 +5,7 @@
 pub const CONFIG: OpenWvConfig = OpenWvConfig {
     widevine_device: include_bytes!("embedded.wvd"),
     log_level: log::LevelFilter::Info,
-    encrypt_client_id: EncryptClientId::Never,
+    encrypt_client_id: EncryptClientId::Always,
 };
 
 pub struct OpenWvConfig {
