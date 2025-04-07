@@ -27,16 +27,16 @@ pub struct OpenWvConfig {
 
 #[allow(dead_code)]
 pub enum EncryptClientId {
-    /// Always send plaintext ClientIdentification, even when the application
-    /// has explicitly provided an encryption key with setServerCertificate().
+    /// Always send plaintext ClientIdentification, even if the application
+    /// explicitly provided an encryption key with `setServerCertificate()`.
     Never,
 
     /// Send encrypted ClientIdentification if the application called
-    /// setServerCertificate(). Send plaintext otherwise.
+    /// `setServerCertificate()`. Send plaintext otherwise.
     IfCertificateSet,
 
-    /// Always send encrypted ClientIdentification. If setServerCertificate()
-    /// was not called, this results in an extra round trip to request the
+    /// Always send encrypted ClientIdentification. If `setServerCertificate()`
+    /// wasn't called, this results in an extra round trip to request the
     /// certificate from the license server.
     Always,
 }

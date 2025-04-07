@@ -81,7 +81,7 @@ where
 }
 
 /// cenc-type init data holds "one or more concatenated Protection System Specific
-/// Header ('pssh') boxes", as per https://www.w3.org/TR/eme-initdata-cenc/.
+/// Header ('pssh') boxes", as per <https://www.w3.org/TR/eme-initdata-cenc/>.
 fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
     let mut remaining = boxes;
 
