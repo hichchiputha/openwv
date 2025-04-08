@@ -352,6 +352,8 @@ impl cdm::ContentDecryptionModule_11_methods for OpenWv {
         let response = unsafe { slice_from_c(response_raw, response_size as _) }.unwrap();
         match sess.update(response) {
             Ok(result) => {
+                // This order matches Google's CDM: resolve the promise first,
+                // then send the key change event.
                 self.host.as_mut().OnResolvePromise(promise_id);
                 process_event(result, sess, self.host.as_mut());
             }
