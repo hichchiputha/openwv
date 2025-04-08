@@ -9,7 +9,7 @@ authors = ["Thomas Hebb <tommyhebb@gmail.com>"]
 edition = "2024"
 
 [dependencies]
-autocxx = "0.30"
+autocxx = { git = "https://github.com/tchebb/autocxx.git", branch = "openwv-fixes" }
 cxx = "1"
 prost = "0.13"
 thiserror = "2"
@@ -32,7 +32,7 @@ cbc = { version = "0.1", features = ["std"] }
 ctr = { version = "0.9", features = ["std"] }
 
 [build-dependencies]
-autocxx-build = "0.30"
+autocxx-build = { git = "https://github.com/tchebb/autocxx.git", branch = "openwv-fixes" }
 prost-build = "0.13"
 thiserror = "2"
 

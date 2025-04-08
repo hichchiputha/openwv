@@ -1,7 +1,3 @@
-// TODO: Remove once we've updated autocxx to a version with
-// https://github.com/google/autocxx/pull/1473
-#![allow(unsafe_op_in_unsafe_fn)]
-
 use autocxx::include_cpp;
 
 mod config;
