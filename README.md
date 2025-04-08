@@ -31,10 +31,13 @@ Linux, `widevinecdm.dll` on Windows, and `libwidevinecdm.dylib` on macOS.*
    [implementation quirk][chromium-hint] of Chromium.
 
 ### Kodi (via [InputStream Adaptive](https://github.com/xbmc/inputstream.adaptive))
-1. In Kodi, navigate to "Add-ons > My add-ons > VideoPlayer InputStream >
+1. Build OpenWV with `encrypt_client_id: EncryptClientId::Never`, as Kodi
+   cannot handle service certificate request messages as of this writing
+   (InputStream Adaptive v21.5.10).
+2. In Kodi, navigate to "Add-ons > My add-ons > VideoPlayer InputStream >
    InputStream Adaptive" and select "Configure".
-2. Ensure the settings level (the gear icon) is set to at least "Advanced".
-3. In the "Expert" tab, set "Decrypter path" to the directory where you've put
+3. Ensure the settings level (the gear icon) is set to at least "Advanced".
+4. In the "Expert" tab, set "Decrypter path" to the directory where you've put
    the OpenWV library. Don't include the library name itself.
 
 [chromium-hint]: https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/media/cdm_registration.cc;l=163-187;drc=e1e92741ef5eac000a66a712ae1af2c44781bc40
