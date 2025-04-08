@@ -28,6 +28,8 @@ pub enum ServerCertificateError {
     CertificateEmpty,
     #[error("bad protobuf serialization")]
     BadProto(#[from] prost::DecodeError),
+    #[error("wrong certificate type {0}")]
+    WrongMessageType(i32),
     #[error("missing protobuf fields")]
     MissingFields,
     #[error("could not verify signature")]
@@ -35,7 +37,7 @@ pub enum ServerCertificateError {
     #[error("couldn't parse certificate public key")]
     MalformedKey(#[from] rsa::pkcs1::Error),
     #[error("wrong certificate type {0}")]
-    WrongType(i32),
+    WrongCertificateType(i32),
 }
 
 impl CdmError for ServerCertificateError {
@@ -55,8 +57,10 @@ pub fn parse_service_cert_message(
     if response.r#type
         != Some(video_widevine::signed_message::MessageType::ServiceCertificate as i32)
     {
-        // TODO: Maybe a different type here?
-        return Err(ServerCertificateError::CertificateEmpty);
+        return Err(response.r#type.map_or(
+            ServerCertificateError::MissingFields,
+            ServerCertificateError::WrongMessageType,
+        ));
     }
 
     parse_service_certificate(Some(response.msg()))
@@ -91,7 +95,7 @@ pub fn parse_service_certificate(
 
     let cert_type = cert.r#type.ok_or(ServerCertificateError::MissingFields)?;
     if cert_type != video_widevine::drm_device_certificate::CertificateType::Service as i32 {
-        return Err(ServerCertificateError::WrongType(cert_type));
+        return Err(ServerCertificateError::WrongCertificateType(cert_type));
     }
 
     let res = ServerCertificate {
