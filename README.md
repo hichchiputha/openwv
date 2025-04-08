@@ -1,3 +1,20 @@
+OpenWV is a free and open-source reimplementation of Google's Widevine Content
+Decryption Module (CDM)—the portion of the Widevine DRM system that runs in
+your browser, obtains encryption keys for protected media, and decrypts the
+media using those keys. OpenWV is a drop-in replacement for Google's [official,
+proprietary CDM][official-cdm] and implements the same [shared library
+API][chromium-cdm-api].
+
+OpenWV does **not** come with a device private key and will not work without
+one. Device private keys, typically stored as `.wvd` files, identify a specific
+CDM or device when requesting a license from a content provider. Depending on
+the device, that license may contain low-value content keys (e.g. standard
+definition only), high-value keys (e.g. HD/UHD), or no keys at all. If you want
+to use OpenWV, you must obtain an appropriate `.wvd` file yourself and include
+it in the build as described below.
+
+[official-cdm]: https://hg-edge.mozilla.org/mozilla-central/file/tip/toolkit/content/gmp-sources/widevinecdm.json
+
 ## Installation
 
 *NOTE: In these instructions, "the OpenWV library" means `libwidevinecdm.so` on
