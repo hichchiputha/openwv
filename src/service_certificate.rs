@@ -26,10 +26,10 @@ pub struct ServerCertificate {
 pub enum ServerCertificateError {
     #[error("certificate not present")]
     CertificateEmpty,
+    #[error("bad certificate encapsulation")]
+    BadSignedMessage(#[from] crate::signed_message::SignedMessageError),
     #[error("bad protobuf serialization")]
     BadProto(#[from] prost::DecodeError),
-    #[error("wrong certificate type {0}")]
-    WrongMessageType(i32),
     #[error("missing protobuf fields")]
     MissingFields,
     #[error("could not verify signature")]
@@ -50,20 +50,14 @@ impl CdmError for ServerCertificateError {
 }
 
 pub fn parse_service_cert_message(
-    message: &[u8],
+    message_bytes: &[u8],
 ) -> Result<ServerCertificate, ServerCertificateError> {
-    let response = video_widevine::SignedMessage::decode(message)?;
+    let message = video_widevine::SignedMessage::decode_with_type(
+        message_bytes,
+        video_widevine::signed_message::MessageType::ServiceCertificate,
+    )?;
 
-    if response.r#type
-        != Some(video_widevine::signed_message::MessageType::ServiceCertificate as i32)
-    {
-        return Err(response.r#type.map_or(
-            ServerCertificateError::MissingFields,
-            ServerCertificateError::WrongMessageType,
-        ));
-    }
-
-    parse_service_certificate(Some(response.msg()))
+    parse_service_certificate(Some(message.msg_checked()?))
 }
 
 pub fn parse_service_certificate(

@@ -17,22 +17,16 @@ use crate::wvd_file::WidevineDevice;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum LicenseError {
+    #[error("bad license encapsulation")]
+    BadSignedMessage(#[from] crate::signed_message::SignedMessageError),
     #[error("bad protobuf serialization")]
     BadProto(#[from] prost::DecodeError),
-    #[error("not a license message")]
-    WrongType,
     #[error("no key in SignedMessage")]
     NoSessionKey,
     #[error("couldn't decrypt key")]
     BadSessionKeyCrypto(#[from] rsa::Error),
     #[error("incorrect key or iv length")]
     BadKeyIvLength(#[from] aes::cipher::InvalidLength),
-    #[error("no signature for SignedMessage")]
-    NoSignature,
-    #[error("could not verify signature")]
-    BadSignature,
-    #[error("no License message in proto")]
-    NoLicense,
     #[error("bad padding in content key")]
     BadContentKey(#[from] aes::cipher::block_padding::UnpadError),
 }
@@ -84,36 +78,28 @@ pub fn request_license(
 }
 
 pub fn load_license_keys(
-    message: &[u8],
+    response_bytes: &[u8],
     request_bytes: &[u8],
     device: &WidevineDevice,
     keys: &mut Vec<ContentKey>,
 ) -> Result<bool, LicenseError> {
-    let response = video_widevine::SignedMessage::decode(message)?;
+    let response = video_widevine::SignedMessage::decode_with_type(
+        response_bytes,
+        video_widevine::signed_message::MessageType::License,
+    )?;
 
-    if response.r#type != Some(video_widevine::signed_message::MessageType::License as i32) {
-        return Err(LicenseError::WrongType);
-    }
-
-    let wrapped_key = response.session_key.ok_or(LicenseError::NoSessionKey)?;
+    let wrapped_key = response
+        .session_key
+        .as_ref()
+        .ok_or(LicenseError::NoSessionKey)?;
 
     let padding = rsa::Oaep::new::<sha1::Sha1>();
-    let session_key = device.private_key.decrypt(padding, &wrapped_key)?;
+    let session_key = device.private_key.decrypt(padding, wrapped_key)?;
     let session_keys = derive_session_keys(request_bytes, &session_key)?;
 
-    let license_bytes = response.msg.ok_or(LicenseError::NoLicense)?;
+    response.verify_signature(&session_keys.mac_server)?;
 
-    let mut digester =
-        hmac::Hmac::<sha2::Sha256>::new_from_slice(&session_keys.mac_server).unwrap();
-    digester.update(&license_bytes);
-    let expected_sig = digester.finalize().into_bytes();
-
-    let actual_sig = response.signature.ok_or(LicenseError::NoSignature)?;
-    if actual_sig != expected_sig.as_slice() {
-        return Err(LicenseError::BadSignature);
-    }
-
-    let license = video_widevine::License::decode(license_bytes.as_slice())?;
+    let license = video_widevine::License::decode(response.msg_checked()?)?;
 
     let mut added_keys = false;
     for key in license.key {

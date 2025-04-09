@@ -10,6 +10,7 @@ mod license;
 mod openwv;
 mod service_certificate;
 mod session;
+mod signed_message;
 mod wvd_file;
 
 use openwv::OpenWv;
