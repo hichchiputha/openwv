@@ -6,8 +6,6 @@ use prost::Message;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use thiserror::Error;
 
-use crate::CdmError;
-use crate::ffi::cdm;
 use crate::keys::ContentKey;
 use crate::service_certificate::{ServerCertificate, encrypt_client_id};
 use crate::util::now;
@@ -17,7 +15,7 @@ use crate::wvd_file::WidevineDevice;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum LicenseError {
-    #[error("bad license encapsulation")]
+    #[error("bad license encapsulation: {0}")]
     BadSignedMessage(#[from] crate::signed_message::SignedMessageError),
     #[error("bad protobuf serialization")]
     BadProto(#[from] prost::DecodeError),
@@ -29,12 +27,6 @@ pub enum LicenseError {
     BadKeyIvLength(#[from] aes::cipher::InvalidLength),
     #[error("bad padding in content key")]
     BadContentKey(#[from] aes::cipher::block_padding::UnpadError),
-}
-
-impl CdmError for LicenseError {
-    fn cdm_exception(&self) -> cdm::Exception {
-        cdm::Exception::kExceptionTypeError
-    }
 }
 
 pub fn request_license(

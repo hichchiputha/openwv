@@ -91,19 +91,11 @@ pub enum SessionError {
 
 impl CdmError for SessionError {
     fn cdm_exception(&self) -> cdm::Exception {
-        match self {
-            Self::InvalidState => cdm::Exception::kExceptionTypeError,
-            Self::LicenseError(e) => e.cdm_exception(),
-            Self::ServiceCertError(_) => cdm::Exception::kExceptionTypeError,
-        }
+        cdm::Exception::kExceptionTypeError
     }
 
     fn cdm_system_code(&self) -> u32 {
-        match self {
-            Self::InvalidState => 0,
-            Self::LicenseError(e) => e.cdm_system_code(),
-            Self::ServiceCertError(e) => e.cdm_system_code(),
-        }
+        0
     }
 }
 

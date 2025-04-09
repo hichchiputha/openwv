@@ -26,7 +26,7 @@ pub struct ServerCertificate {
 pub enum ServerCertificateError {
     #[error("certificate not present")]
     CertificateEmpty,
-    #[error("bad certificate encapsulation")]
+    #[error("bad certificate encapsulation: {0}")]
     BadSignedMessage(#[from] crate::signed_message::SignedMessageError),
     #[error("bad protobuf serialization")]
     BadProto(#[from] prost::DecodeError),
@@ -40,6 +40,9 @@ pub enum ServerCertificateError {
     WrongCertificateType(i32),
 }
 
+// Only affects errors returned from SetServerCertificate(). UpdateSession()
+// errors are determined by SessionError's impl, even when the session message
+// contains a service certificate.
 impl CdmError for ServerCertificateError {
     fn cdm_exception(&self) -> cdm::Exception {
         match self {
