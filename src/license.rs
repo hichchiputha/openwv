@@ -106,10 +106,16 @@ pub fn load_license_keys(
             .len();
         data.truncate(new_size);
 
+        let track_label = match key.track_label {
+            Some(l) if l.is_empty() => None,
+            x => x,
+        };
+
         let new_key = ContentKey {
             id: key.id,
             data,
             key_type: key.r#type,
+            track_label,
         };
 
         info!("Loaded key: {}", &new_key);

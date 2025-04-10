@@ -7,6 +7,7 @@ pub struct ContentKey {
     pub id: Option<Vec<u8>>,
     pub data: Vec<u8>,
     pub key_type: Option<i32>,
+    pub track_label: Option<String>,
 }
 
 impl Display for ContentKey {
@@ -20,9 +21,17 @@ impl Display for ContentKey {
         for b in &self.data {
             write!(f, "{:02x}", b)?;
         }
-        if let Some(t) = self.key_type {
-            write!(f, " [{}]", EnumPrinter::<KeyType>::from(t))?;
+
+        write!(f, " [")?;
+        match self.key_type {
+            None => write!(f, "_"),
+            Some(t) => write!(f, "{}", EnumPrinter::<KeyType>::from(t)),
+        }?;
+        if let Some(l) = &self.track_label {
+            write!(f, ": \"{}\"", l)?;
         }
+        write!(f, "]")?;
+
         Ok(())
     }
 }
