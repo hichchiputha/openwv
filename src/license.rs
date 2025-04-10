@@ -21,7 +21,7 @@ pub enum LicenseError {
     BadProto(#[from] prost::DecodeError),
     #[error("no key in SignedMessage")]
     NoSessionKey,
-    #[error("couldn't decrypt key")]
+    #[error("couldn't decrypt key: {0}")]
     BadSessionKeyCrypto(#[from] rsa::Error),
     #[error("incorrect key or iv length")]
     BadKeyIvLength(#[from] aes::cipher::InvalidLength),
