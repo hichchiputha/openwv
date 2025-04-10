@@ -1,5 +1,7 @@
 use std::ffi::CStr;
+use std::fmt::{Debug, Display};
 use std::io::Write;
+use std::marker::PhantomData;
 use std::slice::from_raw_parts;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -49,5 +51,42 @@ pub unsafe fn slice_from_c<'a, T>(ptr: *const T, len: u32) -> Option<&'a [T]> {
     match ptr.is_null() {
         true => None,
         false => Some(unsafe { from_raw_parts(ptr, len.try_into().unwrap()) }),
+    }
+}
+
+/// Wrapper type to print i32 enum values that are not guaranteed to fall within
+/// the known set of variants.
+pub struct EnumPrinter<T> {
+    value: i32,
+    enum_type: PhantomData<T>,
+}
+
+impl<T> From<i32> for EnumPrinter<T> {
+    fn from(value: i32) -> Self {
+        EnumPrinter {
+            value,
+            enum_type: PhantomData,
+        }
+    }
+}
+
+/// Print the enum variant name if known and the numeric value if not.
+impl<T: TryFrom<i32> + Debug> Display for EnumPrinter<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match T::try_from(self.value) {
+            Ok(v) => write!(f, "{:?}", v),
+            Err(_) => write!(f, "{}", self.value),
+        }
+    }
+}
+
+/// Print the numeric value followed by the enum variant name if known and
+/// "unknown variant" if not.
+impl<T: TryFrom<i32> + Debug> Debug for EnumPrinter<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match T::try_from(self.value) {
+            Ok(v) => write!(f, "{} [{:?}]", self.value, v),
+            Err(_) => write!(f, "{} [unknown variant]", self.value),
+        }
     }
 }

@@ -1,5 +1,8 @@
 use std::fmt::Display;
 
+use crate::util::EnumPrinter;
+use crate::video_widevine::license::key_container::KeyType;
+
 pub struct ContentKey {
     pub id: Option<Vec<u8>>,
     pub data: Vec<u8>,
@@ -18,7 +21,7 @@ impl Display for ContentKey {
             write!(f, "{:02x}", b)?;
         }
         if let Some(t) = self.key_type {
-            write!(f, " [type {}]", t)?;
+            write!(f, " [{}]", EnumPrinter::<KeyType>::from(t))?;
         }
         Ok(())
     }

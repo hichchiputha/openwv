@@ -2,6 +2,7 @@ use cmac::Mac;
 use prost::Message;
 use thiserror::Error;
 
+use crate::util::EnumPrinter;
 use crate::video_widevine::SignedMessage;
 use crate::video_widevine::signed_message::MessageType;
 
@@ -12,7 +13,7 @@ pub enum SignedMessageError {
     BadProto(#[from] prost::DecodeError),
     #[error("no message type in SignedMessage")]
     NoMessageType,
-    #[error("wrong message type: expected {expected}, got {actual}")]
+    #[error("wrong message type: expected {:?}, got {:?}", EnumPrinter::<MessageType>::from(*.expected), EnumPrinter::<MessageType>::from(*.actual))]
     WrongMessageType { actual: i32, expected: i32 },
     #[error("no signature in SignedMessage")]
     NoSignature,

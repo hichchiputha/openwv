@@ -9,7 +9,9 @@ use thiserror::Error;
 
 use crate::CdmError;
 use crate::ffi::cdm;
+use crate::util::EnumPrinter;
 use crate::video_widevine;
+use crate::video_widevine::drm_device_certificate::CertificateType;
 
 const ROOT_PUBKEY: &[u8] = include_bytes!("../third-party/service_certificate_root.der");
 
@@ -36,7 +38,7 @@ pub enum ServerCertificateError {
     BadSignature(#[from] rsa::signature::Error),
     #[error("couldn't parse certificate public key")]
     MalformedKey(#[from] rsa::pkcs1::Error),
-    #[error("wrong certificate type {0}")]
+    #[error("wrong certificate type {:?}", EnumPrinter::<CertificateType>::from(*.0))]
     WrongCertificateType(i32),
 }
 
@@ -91,7 +93,7 @@ pub fn parse_service_certificate(
     let cert = video_widevine::DrmDeviceCertificate::decode(cert_bytes.as_slice())?;
 
     let cert_type = cert.r#type.ok_or(ServerCertificateError::MissingFields)?;
-    if cert_type != video_widevine::drm_device_certificate::CertificateType::Service as i32 {
+    if cert_type != CertificateType::Service as i32 {
         return Err(ServerCertificateError::WrongCertificateType(cert_type));
     }
 
