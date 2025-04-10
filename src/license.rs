@@ -6,7 +6,7 @@ use prost::Message;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use thiserror::Error;
 
-use crate::keys::ContentKey;
+use crate::content_key::ContentKey;
 use crate::service_certificate::{ServerCertificate, encrypt_client_id};
 use crate::util::now;
 use crate::video_widevine;

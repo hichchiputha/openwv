@@ -1,8 +1,8 @@
 use aes::cipher::{BlockDecryptMut, KeyIvInit, StreamCipher};
 use thiserror::Error;
 
+use crate::content_key::ContentKey;
 use crate::ffi::cdm;
-use crate::keys::ContentKey;
 
 #[derive(Error, Debug)]
 #[non_exhaustive]

@@ -7,9 +7,9 @@ use thiserror::Error;
 
 use crate::CdmError;
 use crate::config::{CONFIG, EncryptClientId};
+use crate::content_key::ContentKey;
 use crate::ffi::cdm;
 use crate::init_data::{InitDataError, init_data_to_content_id};
-use crate::keys::ContentKey;
 use crate::license::{LicenseError, load_license_keys, request_license};
 use crate::service_certificate::{
     ServerCertificate, ServerCertificateError, parse_service_cert_message,
