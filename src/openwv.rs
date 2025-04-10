@@ -27,13 +27,13 @@ extern "C" fn InitializeCdmModule_4() {
     try_init_logging();
     debug!("InitializeCdmModule()");
 
+    info!("OpenWV version {} initializing", env!("CARGO_PKG_VERSION"));
+
     let mut embedded_wvd = std::io::Cursor::new(CONFIG.widevine_device);
     match wvd_file::parse_wvd(&mut embedded_wvd) {
         Ok(dev) => {
             if DEVICE.set(dev).is_err() {
                 warn!("Tried to initialize CDM twice!");
-            } else {
-                info!("Successfully loaded embedded device!");
             }
         }
         Err(e) => error!("Could not parse embedded device: {}", e),
