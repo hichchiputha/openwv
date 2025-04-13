@@ -16,10 +16,35 @@ described below.
 
 [official-cdm]: https://hg-edge.mozilla.org/mozilla-central/file/tip/toolkit/content/gmp-sources/widevinecdm.json
 
+## Compilation
+
+Because CDM libraries are heavily sandboxed by browsers, OpenWV cannot read
+configuration from disk at runtime. That means that all configuration,
+including the device identity mentioned above, must be present at build-time.
+As such, there are no official precompiled binaries: **the only way to use
+OpenWV is to build it yourself**.
+
+To get yourself a copy of OpenWV, follow these steps:
+
+1. Make sure both [Git][git] and [Rust][rust] are installed on your system.
+2. Clone this repository: `git clone https://github.com/tchebb/openwv.git`
+3. Enter the newly-cloned `openwv/` directory, then fetch Git submodules:
+   `git submodule init && git submodule update`
+4. Place your `.wvd` file in the project root (alongside this README) and name
+   it `embedded.wvd`. You may set other configuration options as desired by
+   editing the `CONFIG` variable in `src/config.rs`.
+5. Build the library: `cargo build --release`
+6. Find the built library in `target/release/`. Depending on your OS, it will
+   be named `libwidevinecdm.so`, `widevinecdm.dll`, or `libwidevinecdm.dylib`.
+
+[git]: https://git-scm.com/downloads
+[rust]: https://rustup.rs/
+
 ## Installation
 
-*NOTE: In these instructions, "the OpenWV library" means `libwidevinecdm.so` on
-Linux, `widevinecdm.dll` on Windows, and `libwidevinecdm.dylib` on macOS.*
+*NOTE: In these instructions, "the OpenWV library" means the library you built
+in the last section—`libwidevinecdm.so` on Linux, `widevinecdm.dll` on Windows,
+or `libwidevinecdm.dylib` on macOS.*
 
 ### Firefox (version 136+ only)
 1. Open `about:support` and note your "Profile Directory".
