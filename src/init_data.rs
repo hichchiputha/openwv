@@ -138,5 +138,3 @@ fn parse_pssh_box(data: &[u8]) -> Result<Option<&[u8]>, InitDataError> {
     let payload = checked_slice(&data[24..], ..payload_size.try_into()?)?;
     Ok(Some(payload))
 }
-
-// TODO: Unit tests for parse_cenc()
