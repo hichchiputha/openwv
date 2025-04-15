@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 enum BuildError {
     #[error("autocxx failed in build.rs")]
     AutoCxxFailure(#[from] autocxx_build::BuilderError),
