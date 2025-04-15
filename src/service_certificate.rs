@@ -16,7 +16,7 @@ use crate::video_widevine::drm_device_certificate::CertificateType;
 const ROOT_PUBKEY: &[u8] = include_bytes!("../third-party/service_certificate_root.der");
 
 /// This is like [`video_widevine::DrmDeviceCertificate`] but with no optional
-/// fields, for infallible Client ID enccryption.
+/// fields, for infallible Client ID encryption.
 pub struct ServerCertificate {
     key: rsa::RsaPublicKey,
     serial_number: Vec<u8>,
