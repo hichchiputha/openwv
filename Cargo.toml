@@ -3,7 +3,7 @@ name = "openwv"
 version = "0.1.0"
 license = "LGPL-3.0-only"
 
-description = "Open reimplementation of Google's libwidevinecdm.so Content Decryption Module"
+description = "Open reimplementation of Google's Widevine Content Decryption Module"
 authors = ["Thomas Hebb <tommyhebb@gmail.com>"]
 
 edition = "2024"
