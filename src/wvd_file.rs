@@ -20,9 +20,9 @@ pub enum WvdError {
     UnsupportedVersion(u8),
     #[error("unexpected end of data")]
     IoError(#[from] std::io::Error),
-    #[error("invalid private key")]
+    #[error("bad private key")]
     BadKey(#[from] rsa::pkcs1::Error),
-    #[error("invalid Client ID protobuf")]
+    #[error("bad ClientIdentification serialization")]
     BadClientIdProto(#[from] prost::DecodeError),
 }
 

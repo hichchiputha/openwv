@@ -17,7 +17,7 @@ pub enum SignedMessageError {
     WrongMessageType { actual: i32, expected: i32 },
     #[error("no signature in SignedMessage")]
     NoSignature,
-    #[error("could not verify signature")]
+    #[error("couldn't verify signature")]
     BadSignature,
     #[error("no inner message in SignedMessage")]
     NoMessage,
