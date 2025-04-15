@@ -20,7 +20,7 @@ rand = "0.9"
 uuid = "1"
 
 ### RustCrypto crates
-# TODO: Get rid of this once RustCrypto migrates to rand 0.9
+# FIXME: Get rid of this once RustCrypto migrates to rand 0.9
 rand8 = { package = "rand", version = "0.8" }
 rsa = "0.9"
 sha1 = { version = "0.10", features = ["oid"] }
