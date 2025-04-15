@@ -1,5 +1,5 @@
 use prost::Message;
-use rand::Rng;
+use rand::{Rng, TryRngCore};
 use std::collections::HashMap;
 use std::ffi::c_char;
 use std::fmt::Display;
@@ -33,7 +33,7 @@ impl SessionId {
         const CHARS: &[u8] = b"0123456789ABCDEF";
 
         let dist = rand::distr::slice::Choose::new(CHARS).unwrap();
-        let mut rng = rand::rng();
+        let mut rng = rand::rngs::OsRng.unwrap_err();
 
         let mut id = [0u8; Self::LEN + 1];
 

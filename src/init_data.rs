@@ -1,5 +1,6 @@
 use byteorder::{BE, ByteOrder};
 use log::{info, warn};
+use rand::{Rng, TryRngCore};
 use thiserror::Error;
 use uuid::{Uuid, uuid};
 
@@ -39,6 +40,8 @@ pub fn init_data_to_content_id(
     init_data_type: InitDataType,
     init_data: &[u8],
 ) -> Result<ContentIdentification, InitDataError> {
+    let rng = rand::rngs::OsRng.unwrap_err();
+
     // Note that CencDeprecated and WebmDeprecated seem to be required here,
     // despite their names. I tried using the newer InitData message, but the
     // license server I'm testing with rejects it.
@@ -49,7 +52,7 @@ pub fn init_data_to_content_id(
             let proto = content_identification::CencDeprecated {
                 pssh: vec![widevine_pssh_data.into()],
                 license_type: Some(LicenseType::Streaming as i32),
-                request_id: Some(rand::random_iter().take(16).collect()),
+                request_id: Some(rng.random_iter().take(16).collect()),
             };
 
             Ok(ContentIdentification {
@@ -61,7 +64,7 @@ pub fn init_data_to_content_id(
             let proto = content_identification::WebmDeprecated {
                 header: Some(init_data.into()),
                 license_type: Some(LicenseType::Streaming as i32),
-                request_id: Some(rand::random_iter().take(16).collect()),
+                request_id: Some(rng.random_iter().take(16).collect()),
             };
 
             Ok(ContentIdentification {

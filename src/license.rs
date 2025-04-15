@@ -3,6 +3,7 @@ use byteorder::{BE, ByteOrder};
 use cmac::Mac;
 use log::info;
 use prost::Message;
+use rand::{Rng, TryRngCore};
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use thiserror::Error;
 
@@ -34,7 +35,7 @@ pub fn request_license(
     server_certificate: Option<&ServerCertificate>,
     device: &WidevineDevice,
 ) -> (video_widevine::SignedMessage, Vec<u8>) {
-    let key_control_nonce: u32 = rand::random();
+    let key_control_nonce: u32 = rand::rngs::OsRng.unwrap_err().random();
 
     let mut req = video_widevine::LicenseRequest {
         content_id: Some(content_id),

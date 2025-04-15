@@ -2,7 +2,7 @@ use aes::cipher::BlockEncryptMut;
 use aes::cipher::KeyIvInit;
 use log::info;
 use prost::Message;
-use rand::Rng;
+use rand::{Rng, TryRngCore};
 use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::signature::Verifier;
 use thiserror::Error;
@@ -116,7 +116,7 @@ pub fn encrypt_client_id(
     cert: &ServerCertificate,
     client_id: &video_widevine::ClientIdentification,
 ) -> video_widevine::EncryptedClientIdentification {
-    let mut rng = rand::rng();
+    let mut rng = rand::rngs::OsRng.unwrap_err();
     let privacy_key: Vec<u8> = (0..16).map(|_| rng.random()).collect();
     let privacy_iv: Vec<u8> = (0..16).map(|_| rng.random()).collect();
 
