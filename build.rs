@@ -4,9 +4,9 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 enum BuildError {
-    #[error("autocxx failed in build.rs")]
+    #[error("autocxx failed in build.rs: {0}")]
     AutoCxxFailure(#[from] autocxx_build::BuilderError),
-    #[error("prost failed in build.rs")]
+    #[error("prost failed in build.rs: {0}")]
     ProstFailure(#[from] std::io::Error),
 }
 
