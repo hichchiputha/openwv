@@ -6,13 +6,13 @@ proprietary CDM][official-cdm] and implements the same [shared library
 API][chromium-cdm-api].
 
 OpenWV does **not** come with a device identity and will not work without one.
-A device identity, typically stored as a `.wvd` file, contains metadata about a
-Widevine client as well as a private key that authenticates that client to
-Widevine license servers. Depending on the client's identity, a license server
-may give it low-value content keys (e.g. standard definition only), high-value
-keys (e.g. HD/UHD), or no keys at all. If you want to use OpenWV, you must
-obtain an appropriate `.wvd` file yourself and include it in the build as
-described below.
+A device identity, typically stored as a [`.wvd` file][pywidevine], contains
+metadata about a Widevine client as well as a private key that authenticates
+that client to Widevine license servers. Depending on the client's identity, a
+license server may return low-value content keys (e.g. standard definition
+only), high-value keys (e.g. HD/UHD), or no keys at all. If you want to use
+OpenWV, you must obtain an appropriate `.wvd` file yourself and include it in
+the build as described below.
 
 [official-cdm]: https://hg-edge.mozilla.org/mozilla-central/file/tip/toolkit/content/gmp-sources/widevinecdm.json
 
@@ -24,7 +24,7 @@ including the device identity mentioned above, must be present at build-time.
 As such, there are no official precompiled binaries: **the only way to use
 OpenWV is to build it yourself**.
 
-To get yourself a copy of OpenWV, follow these steps:
+To build OpenWV, follow these steps:
 
 1. Make sure both [Git][git] and [Rust][rust] are installed on your system.
 2. Clone this repository: `git clone https://github.com/tchebb/openwv.git`
