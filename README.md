@@ -60,7 +60,7 @@ or `libwidevinecdm.dylib` on macOS.*
 ### Chrome/Chromium
 1. Open `chrome://version/` and note the **parent** directory of your "Profile
    Path". This is Chrome's "User Data Directory".
-2. Navigate to `WidevineCdm/` within the user data directory.
+2. Navigate to `WidevineCdm/` within the User Data Directory.
 3. If there are any existing subdirectories, delete them.
 4. Create a subdirectory named `9999` (or any numeric version greater than that
    of Google's CDM), and place OpenWV's `manifest-chromium.json`, renamed to
@@ -69,9 +69,9 @@ or `libwidevinecdm.dylib` on macOS.*
    a directory named `{linux,win,mac}_{x86,x64,arm,arm64}`, as appropriate,
    inside it. For example, `_platform_specific/linux_x64/` on 64-bit Intel
    Linux. Place the OpenWV library in this innermost directory.
-6. On Linux only, launch and quit the browser once before playing any Widevine-
-   protected media. OpenWV will not be loaded on the first launch, due to an
-   [implementation quirk][chromium-hint] of Chromium.
+6. On Linux only, launch and quit the browser once before playing any
+   Widevine-protected media. OpenWV will not be loaded on the first launch, due
+   to an [implementation quirk][chromium-hint] of Chromium.
 
 ### Kodi (via [InputStream Adaptive](https://github.com/xbmc/inputstream.adaptive))
 1. Build OpenWV with `encrypt_client_id: EncryptClientId::Never`, as Kodi
