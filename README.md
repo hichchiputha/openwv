@@ -46,7 +46,7 @@ To build OpenWV, follow these steps:
 in the last section—`libwidevinecdm.so` on Linux, `widevinecdm.dll` on Windows,
 or `libwidevinecdm.dylib` on macOS.*
 
-### Firefox (version 136+ only)
+### Firefox (versions 136+ only)
 1. Open `about:support` and note your "Profile Directory".
 2. Open `about:config`. Set `media.gmp-widevinecdm.autoupdate` to `false`
    (creating it if needed), and set `media.gmp-widevinecdm.version` to `openwv`
@@ -70,7 +70,7 @@ or `libwidevinecdm.dylib` on macOS.*
    inside it. For example, `_platform_specific/linux_x64/` on 64-bit Intel
    Linux. Place the OpenWV library in this innermost directory.
 6. On Linux only, launch and quit the browser once before playing any
-   Widevine-protected media. OpenWV will not be loaded on the first launch, due
+   Widevine-protected media. OpenWV will not be loaded on the first launch due
    to an [implementation quirk][chromium-hint] of Chromium.
 
 ### Kodi (via [InputStream Adaptive](https://github.com/xbmc/inputstream.adaptive))
