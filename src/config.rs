@@ -18,7 +18,7 @@ pub struct OpenWvConfig {
     pub log_level: log::LevelFilter,
 
     /// Policy for when to encrypt Client ID. Chrome uses `Always` if Verified
-    /// Media Path is in use and `Never` otherwise. Similarly, Chrome OS uses
+    /// Media Path is in use and `Never` otherwise. Similarly, ChromeOS uses
     /// `Always` if Platform Verification is enabled (i.e. when Developer Mode
     /// is off) and `Never` otherwise. The Android devices I've tested use
     /// `Always`. Chromecasts use `Never`.
@@ -36,7 +36,7 @@ pub enum EncryptClientId {
     IfCertificateSet,
 
     /// Always send encrypted ClientIdentification. If `setServerCertificate()`
-    /// wasn't called, this results in an extra round trip to request the
-    /// certificate from the license server.
+    /// wasn't called, this results in an extra round trip to the license server
+    /// to fetch a certificate.
     Always,
 }
