@@ -57,6 +57,12 @@ or `libwidevinecdm.dylib` on macOS.*
    you **must** use OpenWV's `manifest.json` instead of Google's, as Firefox
    will not play video if we falsely advertise decoding support.
 
+**If you manually check for addon updates, Firefox will replace OpenWV with
+Google's CDM**. The `media.gmp-widevinecdm.autoupdate` setting prevents
+automatic updates, but [there's no way][firefox-updater] to prevent manual
+updates. If this happens, you need only set `media.gmp-widevinecdm.version` back
+to `openwv`—no need to repeat the other steps.
+
 ### Chrome/Chromium
 1. Open `chrome://version/` and note the **parent** directory of your "Profile
    Path". This is Chrome's "User Data Directory".
@@ -83,6 +89,7 @@ or `libwidevinecdm.dylib` on macOS.*
 4. In the "Expert" tab, set "Decrypter path" to the directory where you've put
    the OpenWV library. Don't include the library name itself.
 
+[firefox-updater]: https://searchfox.org/mozilla-central/rev/ae4d3bc2af37eef804113b621455883a92a29e9c/toolkit/mozapps/extensions/internal/GMPProvider.sys.mjs#391-455
 [chromium-hint]: https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/media/cdm_registration.cc;l=163-187;drc=e1e92741ef5eac000a66a712ae1af2c44781bc40
 
 ## References
