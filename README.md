@@ -14,7 +14,7 @@ only), high-value keys (e.g. HD/UHD), or no keys at all. If you want to use
 OpenWV, you must obtain an appropriate `.wvd` file yourself and include it in
 the build as described below.
 
-[official-cdm]: https://hg-edge.mozilla.org/mozilla-central/file/tip/toolkit/content/gmp-sources/widevinecdm.json
+[official-cdm]: https://github.com/mozilla-firefox/firefox/blob/main/toolkit/content/gmp-sources/widevinecdm.json
 
 ## Compilation
 
@@ -89,8 +89,8 @@ to `openwv`—no need to repeat the other steps.
 4. In the "Expert" tab, set "Decrypter path" to the directory where you've put
    the OpenWV library. Don't include the library name itself.
 
-[firefox-updater]: https://searchfox.org/mozilla-central/rev/ae4d3bc2af37eef804113b621455883a92a29e9c/toolkit/mozapps/extensions/internal/GMPProvider.sys.mjs#391-455
-[chromium-hint]: https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/media/cdm_registration.cc;l=163-187;drc=e1e92741ef5eac000a66a712ae1af2c44781bc40
+[firefox-updater]: https://github.com/mozilla-firefox/firefox/blob/FIREFOX_139_0_RELEASE/toolkit/mozapps/extensions/internal/GMPProvider.sys.mjs#L391-L455
+[chromium-hint]: https://source.chromium.org/chromium/chromium/src/+/refs/tags/137.0.7151.59:chrome/common/media/cdm_registration.cc;l=163-187
 
 ## References
 
