@@ -49,7 +49,7 @@ To build OpenWV, follow these steps:
 in the last section—`libwidevinecdm.so` on Linux, `widevinecdm.dll` on Windows,
 or `libwidevinecdm.dylib` on macOS.*
 
-### Firefox (versions 136+ only)
+### Firefox
 1. Open `about:support` and note your "Profile Directory".
 2. Open `about:config`. Set `media.gmp-widevinecdm.autoupdate` to `false`
    (creating it if needed), and set `media.gmp-widevinecdm.version` to `openwv`

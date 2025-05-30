@@ -6,6 +6,7 @@ use std::ptr::{null, null_mut};
 use std::sync::OnceLock;
 
 use crate::CdmError;
+use crate::common_host::{CommonHost, downcast_host};
 use crate::config::CONFIG;
 use crate::decrypt::{DecryptError, decrypt_buf};
 use crate::ffi::cdm;
@@ -13,9 +14,6 @@ use crate::service_certificate::{ServerCertificate, parse_service_certificate};
 use crate::session::{Session, SessionEvent, SessionStore};
 use crate::util::{cstr_from_str, slice_from_c, try_init_logging};
 use crate::wvd_file;
-
-// To change this, also change ContentDecryptionModule_NN and Host_NN.
-const CDM_INTERFACE: c_int = 11;
 
 // Holds the private key and client ID we use for license requests. Loaded once
 // during InitializeCdmModule() and referenced by all subsequently-created
@@ -54,16 +52,19 @@ unsafe extern "C" fn CreateCdmInstance(
     key_system_size: u32,
     get_cdm_host_func: Option<GetCdmHostFunc>,
     user_data: *mut c_void,
-) -> *mut cdm::ContentDecryptionModule_11 {
+) -> *mut c_void {
     debug!("CreateCdmInstance()");
 
-    if cdm_interface_version != CDM_INTERFACE {
-        error!(
-            "Unsupported interface version {} requested, expected {}",
-            cdm_interface_version, CDM_INTERFACE
-        );
-        return null_mut();
-    }
+    type IntoHost = unsafe fn(*mut c_void) -> Option<&'static mut dyn CommonHost>;
+    type FromCdm = fn(Pin<&mut cdm::CommonCdm>) -> *mut c_void;
+    let (into_host, from_cdm): (IntoHost, FromCdm) = match cdm_interface_version {
+        10 => (downcast_host::<cdm::Host_10>, |cdm| cdm.As10().cast()),
+        11 => (downcast_host::<cdm::Host_11>, |cdm| cdm.As11().cast()),
+        _ => {
+            error!("Unsupported interface {} requested", cdm_interface_version);
+            return null_mut();
+        }
+    };
 
     // SAFETY: The API contract requires that `key_system` be a valid pointer
     // to a buffer of length `key_system_size`.
@@ -85,18 +86,18 @@ unsafe extern "C" fn CreateCdmInstance(
 
     // SAFETY: API contract requires that `get_cdm_host_func` returns an
     // appropriate C++ Host_NN object.
-    let host_raw: *mut cdm::Host_11 = match get_cdm_host_func {
+    let host_raw: *mut c_void = match get_cdm_host_func {
         None => {
             error!("Got NULL get_cdm_host_func pointer");
             return null_mut();
         }
-        Some(f) => unsafe { f(CDM_INTERFACE, user_data) }.cast(),
+        Some(f) => unsafe { f(cdm_interface_version, user_data) },
     };
 
     // SAFETY: Although not explicitly documented, we can infer from the fact
     // that the Host_NN class does not allow us to move or free it that this
     // object remains owned by C++. As such, we only want a reference.
-    let host = match unsafe { host_raw.as_mut() } {
+    let host = match unsafe { into_host(host_raw) } {
         None => {
             error!("No host functions available");
             return null_mut();
@@ -120,10 +121,10 @@ unsafe extern "C" fn CreateCdmInstance(
     });
 
     let mut openwv_ref = openwv.borrow_mut();
-    let cdm = openwv_ref.pin_mut();
+    let res = from_cdm(openwv_ref.pin_mut());
 
-    // SAFETY: C++ will not try to move the pointer we give it.
-    unsafe { cdm.get_unchecked_mut() }
+    info!("Created CDM with interface {}", cdm_interface_version);
+    res
 }
 
 const VERSION_STR: &std::ffi::CStr =
@@ -139,14 +140,14 @@ use crate::ffi;
 
 #[subclass(self_owned)]
 pub struct OpenWv {
-    host: Pin<&'static mut cdm::Host_11>,
+    host: Pin<&'static mut dyn CommonHost>,
     sessions: SessionStore,
     device: &'static wvd_file::WidevineDevice,
     server_cert: Option<ServerCertificate>,
     allow_persistent_state: bool,
 }
 
-impl cdm::Host_11 {
+impl dyn CommonHost {
     fn reject(
         self: Pin<&mut Self>,
         promise_id: u32,
@@ -188,7 +189,7 @@ impl cdm::Host_11 {
     }
 }
 
-fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm::Host_11>) {
+fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut dyn CommonHost>) {
     // SAFETY: This SessionId cannot be a temporary, as it must live until after
     // the various FFI calls below.
     let session_id = session.id();
@@ -233,7 +234,7 @@ fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut cdm:
     }
 }
 
-impl cdm::ContentDecryptionModule_11_methods for OpenWv {
+impl cdm::CommonCdm_methods for OpenWv {
     fn Initialize(
         &mut self,
         _allow_distinctive_identifier: bool,

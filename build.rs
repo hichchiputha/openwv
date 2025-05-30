@@ -12,7 +12,8 @@ enum BuildError {
 
 fn main() -> Result<(), BuildError> {
     let bindings_rs = "src/lib.rs";
-    let mut autocxx = autocxx_build::Builder::new(bindings_rs, &[PathBuf::from("third-party/cdm")])
+    let autocxx_incs = &[PathBuf::from("src"), PathBuf::from("third-party/cdm")];
+    let mut autocxx = autocxx_build::Builder::new(bindings_rs, autocxx_incs)
         .extra_clang_args(&["-std=c++14"])
         .build()?;
     autocxx.std("c++14").compile("cdm-api");

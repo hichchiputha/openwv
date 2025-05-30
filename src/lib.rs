@@ -3,6 +3,7 @@ use autocxx::include_cpp;
 mod config;
 mod util;
 
+mod common_host;
 mod content_key;
 mod decrypt;
 mod init_data;
@@ -15,9 +16,12 @@ mod wvd_file;
 
 use openwv::OpenWv;
 include_cpp! {
-    #include "content_decryption_module.h"
+    #include "common_cdm.h"
     safety!(unsafe)
-    subclass!("cdm::ContentDecryptionModule_11", OpenWv)
+    // FIXME: We can directly subclass from `cdm::ContentDecryptionModule_NN`
+    // here if autocxx ever supports multiple inheritance for subclasses.
+    subclass!("cdm::CommonCdm", OpenWv)
+    generate!("cdm::Host_10")
     generate!("cdm::Host_11")
     generate!("cdm::Buffer")
     generate!("cdm::DecryptedBlock")

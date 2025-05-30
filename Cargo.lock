@@ -111,7 +111,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "autocxx"
 version = "0.30.0"
-source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1766160501ab733b693a239b2e6828c76b9fc208"
+source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1fca5acd26f533576f98da45075d5498a1731d92"
 dependencies = [
  "aquamarine",
  "autocxx-macro",
@@ -141,7 +141,7 @@ dependencies = [
 [[package]]
 name = "autocxx-build"
 version = "0.30.0"
-source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1766160501ab733b693a239b2e6828c76b9fc208"
+source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1fca5acd26f533576f98da45075d5498a1731d92"
 dependencies = [
  "autocxx-engine",
  "env_logger 0.9.3",
@@ -152,7 +152,7 @@ dependencies = [
 [[package]]
 name = "autocxx-engine"
 version = "0.30.0"
-source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1766160501ab733b693a239b2e6828c76b9fc208"
+source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1fca5acd26f533576f98da45075d5498a1731d92"
 dependencies = [
  "aquamarine",
  "autocxx-bindgen",
@@ -181,7 +181,7 @@ dependencies = [
 [[package]]
 name = "autocxx-macro"
 version = "0.30.0"
-source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1766160501ab733b693a239b2e6828c76b9fc208"
+source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1fca5acd26f533576f98da45075d5498a1731d92"
 dependencies = [
  "autocxx-parser",
  "proc-macro-error",
@@ -193,7 +193,7 @@ dependencies = [
 [[package]]
 name = "autocxx-parser"
 version = "0.30.0"
-source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1766160501ab733b693a239b2e6828c76b9fc208"
+source = "git+https://github.com/tchebb/autocxx.git?branch=openwv-fixes#1fca5acd26f533576f98da45075d5498a1731d92"
 dependencies = [
  "indexmap 1.9.3",
  "itertools 0.10.5",
