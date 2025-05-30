@@ -26,7 +26,9 @@ OpenWV is to build it yourself**.
 
 To build OpenWV, follow these steps:
 
-1. Make sure both [Git][git] and [Rust][rust] are installed on your system.
+1. Make sure that [Git][git], [Rust][rust], and [Clang][clang-install] are
+   installed on your system. (To install Clang on Windows 10/11, run
+   `winget install LLVM.LLVM`.)
 2. Clone this repository: `git clone https://github.com/tchebb/openwv.git`
 3. Enter the newly-cloned `openwv/` directory, then fetch Git submodules:
    `git submodule init && git submodule update`
@@ -39,6 +41,7 @@ To build OpenWV, follow these steps:
 
 [git]: https://git-scm.com/downloads
 [rust]: https://rustup.rs/
+[clang-install]: https://rust-lang.github.io/rust-bindgen/requirements.html#installing-clang
 
 ## Installation
 
