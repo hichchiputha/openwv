@@ -65,8 +65,8 @@ unsafe extern "C" fn CreateCdmInstance(
         return null_mut();
     }
 
-    // SAFETY: The API contract requires that `key_system`` be a valid pointer
-    // to a buffer of length `key_system_size``.
+    // SAFETY: The API contract requires that `key_system` be a valid pointer
+    // to a buffer of length `key_system_size`.
     let Some(key_system_str) =
         (unsafe { slice_from_c(key_system as *const c_uchar, key_system_size as _) })
     else {
