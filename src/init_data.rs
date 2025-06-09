@@ -104,16 +104,16 @@ fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
         };
         let box_payload = checked_slice(remaining, payload_start..payload_end)?;
 
-        match box_type {
-            b"pssh" => {
-                if let Some(wv_pssh) = parse_pssh_box(box_payload)? {
-                    return Ok(wv_pssh);
-                }
-            }
-            _ => warn!(
+        if box_type != b"pssh" {
+            warn!(
                 "Skipping unknown CENC box type: {}",
                 box_type.escape_ascii()
-            ),
+            );
+            continue;
+        }
+
+        if let Some(wv_pssh) = parse_pssh_box(box_payload)? {
+            return Ok(wv_pssh);
         }
 
         remaining = &remaining[payload_end..];
