@@ -44,4 +44,5 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+strip = "symbols"
 lto = "fat"
