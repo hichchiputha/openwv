@@ -1,10 +1,6 @@
 #ifndef COMMON_CDM_H_
 #define COMMON_CDM_H_
 
-// FIXME: Work around a bug in content_decryption_module.h that leaves uint64_t
-// undefined on certain Windows systems.
-#include <cstdint>
-
 #include "content_decryption_module.h"
 
 namespace cdm {
