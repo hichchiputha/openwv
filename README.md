@@ -29,14 +29,13 @@ To build OpenWV, follow these steps:
 1. Make sure that [Git][git], [Rust][rust], and [Clang][clang-install] are
    installed on your system. (To install Clang on Windows 10/11, run
    `winget install LLVM.LLVM`.)
-2. Clone this repository: `git clone https://github.com/tchebb/openwv.git`
-3. Enter the newly-cloned `openwv/` directory, then fetch Git submodules:
-   `git submodule init && git submodule update`
-4. Place your `.wvd` file in the project root (alongside this README) and name
+2. Clone this repository and its submodule, telling Git to keep the two in sync:
+   `git clone --recurse-submodules -c submodule.recurse=true https://github.com/tchebb/openwv.git`
+3. Place your `.wvd` file in the project root (alongside this README) and name
    it `embedded.wvd`. You may set other configuration options as desired by
    editing the `CONFIG` variable in `src/config.rs`.
-5. Build the library: `cargo build --release`
-6. Find the built library in `target/release/`. Depending on your OS, it will
+4. Build the library: `cargo build --release`
+5. Find the built library in `target/release/`. Depending on your OS, it will
    be named `libwidevinecdm.so`, `widevinecdm.dll`, or `libwidevinecdm.dylib`.
 
 [git]: https://git-scm.com/downloads
