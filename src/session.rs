@@ -38,7 +38,7 @@ impl SessionId {
         let mut id = [0u8; Self::LEN + 1];
 
         // Leave last element unfilled as NUL terminator
-        for i in id[..Self::LEN].iter_mut() {
+        for i in &mut id[..Self::LEN] {
             *i = *rng.sample(dist);
         }
 
@@ -46,7 +46,7 @@ impl SessionId {
     }
 
     pub unsafe fn from_cxx(ptr: *const c_char, size: u32) -> Result<SessionId, BadSessionId> {
-        let slice = unsafe { slice_from_c(ptr as *const std::ffi::c_uchar, size) }.unwrap();
+        let slice = unsafe { slice_from_c(ptr.cast::<std::ffi::c_uchar>(), size) }.unwrap();
 
         if slice.len() != Self::LEN {
             return Err(BadSessionId);
@@ -59,7 +59,7 @@ impl SessionId {
     }
 
     pub fn as_cxx(&self) -> (*const c_char, u32) {
-        (self.0.as_ptr() as _, Self::LEN as _)
+        (self.0.as_ptr().cast(), Self::LEN as _)
     }
 }
 

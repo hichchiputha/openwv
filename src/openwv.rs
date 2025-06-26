@@ -69,7 +69,7 @@ unsafe extern "C" fn CreateCdmInstance(
     // SAFETY: The API contract requires that `key_system` be a valid pointer
     // to a buffer of length `key_system_size`.
     let Some(key_system_str) =
-        (unsafe { slice_from_c(key_system as *const c_uchar, key_system_size as _) })
+        (unsafe { slice_from_c(key_system.cast::<c_uchar>(), key_system_size as _) })
     else {
         error!("Got NULL key_system pointer");
         return null_mut();
@@ -201,7 +201,7 @@ fn process_event(event: SessionEvent, session: &Session, mut host: Pin<&mut dyn 
                 id_ptr,
                 id_len,
                 cdm::MessageType::kLicenseRequest,
-                request.as_ptr() as _,
+                request.as_ptr().cast(),
                 request.len() as _,
             );
         },
