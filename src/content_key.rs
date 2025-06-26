@@ -14,12 +14,12 @@ impl Display for ContentKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(id) = &self.id {
             for b in id {
-                write!(f, "{:02x}", b)?;
+                write!(f, "{b:02x}")?;
             }
             write!(f, ":")?;
         }
         for b in &self.data {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
 
         write!(f, " [")?;
@@ -28,7 +28,7 @@ impl Display for ContentKey {
             Some(t) => write!(f, "{}", EnumPrinter::<KeyType>::from(t)),
         }?;
         if let Some(l) = &self.track_label {
-            write!(f, ": \"{}\"", l)?;
+            write!(f, ": \"{l}\"")?;
         }
         write!(f, "]")?;
 

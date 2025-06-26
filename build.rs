@@ -17,7 +17,7 @@ fn main() -> Result<(), BuildError> {
         .extra_clang_args(&["-std=c++14"])
         .build()?;
     autocxx.std("c++14").compile("cdm-api");
-    println!("cargo:rerun-if-changed={}", bindings_rs);
+    println!("cargo:rerun-if-changed={bindings_rs}");
 
     let no_paths: [&str; 0] = [];
     let proto_fd = "third-party/widevine_protos.pb";
@@ -25,7 +25,7 @@ fn main() -> Result<(), BuildError> {
         .file_descriptor_set_path(proto_fd)
         .skip_protoc_run()
         .compile_protos(&no_paths, &no_paths)?;
-    println!("cargo:rerun-if-changed={}", proto_fd);
+    println!("cargo:rerun-if-changed={proto_fd}");
 
     Ok(())
 }

@@ -74,7 +74,7 @@ impl<T> From<i32> for EnumPrinter<T> {
 impl<T: TryFrom<i32> + Debug> Display for EnumPrinter<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match T::try_from(self.value) {
-            Ok(v) => write!(f, "{:?}", v),
+            Ok(v) => write!(f, "{v:?}"),
             Err(_) => write!(f, "{}", self.value),
         }
     }

@@ -124,16 +124,13 @@ fn parse_cenc(boxes: &[u8]) -> Result<&[u8], InitDataError> {
 fn parse_pssh_box(data: &[u8]) -> Result<Option<&[u8]>, InitDataError> {
     let version = *checked_slice(data, 0)?;
     if version != 0 {
-        info!("Skipping PSSH box with unknown version {}", version);
+        info!("Skipping PSSH box with unknown version {version}");
         return Ok(None);
     }
 
     let system_id = Uuid::from_slice(checked_slice(data, 4..20)?).unwrap();
     if system_id != WIDEVINE_SYSTEMID {
-        info!(
-            "Skipping PSSH box with non-Widevine system ID {}",
-            system_id
-        );
+        info!("Skipping PSSH box with non-Widevine system ID {system_id}");
         return Ok(None);
     }
 

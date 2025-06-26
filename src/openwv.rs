@@ -34,7 +34,7 @@ extern "C" fn InitializeCdmModule_4() {
                 warn!("Tried to initialize CDM twice!");
             }
         }
-        Err(e) => error!("Could not parse embedded device: {}", e),
+        Err(e) => error!("Could not parse embedded device: {e}"),
     }
 }
 
@@ -61,7 +61,7 @@ unsafe extern "C" fn CreateCdmInstance(
         10 => (downcast_host::<cdm::Host_10>, |cdm| cdm.As10().cast()),
         11 => (downcast_host::<cdm::Host_11>, |cdm| cdm.As11().cast()),
         _ => {
-            error!("Unsupported interface {} requested", cdm_interface_version);
+            error!("Unsupported interface {cdm_interface_version} requested");
             return null_mut();
         }
     };
@@ -123,7 +123,7 @@ unsafe extern "C" fn CreateCdmInstance(
     let mut openwv_ref = openwv.borrow_mut();
     let res = from_cdm(openwv_ref.pin_mut());
 
-    info!("Created CDM with interface {}", cdm_interface_version);
+    info!("Created CDM with interface {cdm_interface_version}");
     res
 }
 
@@ -166,7 +166,7 @@ impl dyn CommonHost {
     }
 
     fn throw(self: Pin<&mut Self>, promise_id: u32, e: &(impl std::error::Error + CdmError)) {
-        warn!("Returning API error: {}", e);
+        warn!("Returning API error: {e}");
 
         // SAFETY: This CString cannot be a temporary, as it must live until
         // after the OnRejectPromise() FFI call.
@@ -241,13 +241,13 @@ impl cdm::CommonCdm_methods for OpenWv {
         allow_persistent_state: bool,
         _use_hw_secure_codecs: bool,
     ) {
-        debug!("OpenWv({:p}).Initialize()", self);
+        debug!("OpenWv({self:p}).Initialize()");
         self.allow_persistent_state = allow_persistent_state;
         self.host.as_mut().OnInitialized(true);
     }
 
     fn GetStatusForPolicy(&mut self, promise_id: u32, _policy: &cdm::Policy) {
-        debug!("OpenWv({:p}).GetStatusForPolicy()", self);
+        debug!("OpenWv({self:p}).GetStatusForPolicy()");
         self.host
             .as_mut()
             .OnResolveKeyStatusPromise(promise_id, cdm::KeyStatus::kUsable);
@@ -259,7 +259,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         server_certificate_data: *const u8,
         server_certificate_data_size: u32,
     ) {
-        debug!("OpenWv({:p}).SetServerCertificate()", self);
+        debug!("OpenWv({self:p}).SetServerCertificate()");
 
         let server_certificate =
             unsafe { slice_from_c(server_certificate_data, server_certificate_data_size) };
@@ -280,7 +280,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         init_data_raw: *const u8,
         init_data_size: u32,
     ) {
-        debug!("OpenWv({:p}).CreateSessionAndGenerateRequest()", self);
+        debug!("OpenWv({self:p}).CreateSessionAndGenerateRequest()");
         if session_type == cdm::SessionType::kPersistentLicense && !self.allow_persistent_state {
             self.host.as_mut().reject(
                 promise_id,
@@ -310,7 +310,7 @@ impl cdm::CommonCdm_methods for OpenWv {
                 process_event(result, &sess, self.host.as_mut());
 
                 self.sessions.add(sess);
-                info!("Registered new session {}", session_id);
+                info!("Registered new session {session_id}");
             }
             Err(e) => self.host.as_mut().throw(promise_id, &e),
         }
@@ -323,7 +323,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         _session_id: *const c_char,
         _session_id_size: u32,
     ) {
-        debug!("OpenWv({:p}).LoadSession()", self);
+        debug!("OpenWv({self:p}).LoadSession()");
 
         // TODO: Implement
         self.host.as_mut().reject(
@@ -341,7 +341,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         response_raw: *const u8,
         response_size: u32,
     ) {
-        debug!("OpenWv({:p}).UpdateSession()", self);
+        debug!("OpenWv({self:p}).UpdateSession()");
         let sess = match unsafe { self.sessions.lookup(session_id, session_id_size) } {
             Ok(s) => s,
             Err(e) => {
@@ -368,12 +368,12 @@ impl cdm::CommonCdm_methods for OpenWv {
         session_id: *const c_char,
         session_id_size: u32,
     ) {
-        debug!("OpenWv({:p}).CloseSession()", self);
+        debug!("OpenWv({self:p}).CloseSession()");
         match unsafe { self.sessions.lookup(session_id, session_id_size) } {
             Ok(s) => {
                 let id = s.id();
                 self.sessions.delete(id);
-                info!("Deleted session {}", id);
+                info!("Deleted session {id}");
                 self.host.as_mut().OnResolvePromise(promise_id);
                 unsafe {
                     self.host
@@ -391,7 +391,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         session_id: *const c_char,
         session_id_size: u32,
     ) {
-        debug!("OpenWv({:p}).RemoveSession()", self);
+        debug!("OpenWv({self:p}).RemoveSession()");
         match unsafe { self.sessions.lookup(session_id, session_id_size) } {
             Ok(s) => {
                 s.clear_licenses();
@@ -402,7 +402,7 @@ impl cdm::CommonCdm_methods for OpenWv {
     }
 
     unsafe fn TimerExpired(&mut self, _context: *mut autocxx::c_void) {
-        debug!("OpenWv({:p}).TimerExpired()", self);
+        debug!("OpenWv({self:p}).TimerExpired()");
         warn!("Got TimerExpired(), but we never called SetTimer()!");
     }
 
@@ -411,7 +411,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         in_buf: &cdm::InputBuffer_2,
         out_block_raw: *mut cdm::DecryptedBlock,
     ) -> cdm::Status {
-        trace!("OpenWv({:p}).Decrypt()", self);
+        trace!("OpenWv({self:p}).Decrypt()");
 
         let mut out_block = match unsafe { out_block_raw.as_mut() } {
             None => return cdm::Status::kSuccess,
@@ -461,7 +461,7 @@ impl cdm::CommonCdm_methods for OpenWv {
                 cdm::Status::kNoKey
             }
             Err(e) => {
-                warn!("Decryption error: {}", e);
+                warn!("Decryption error: {e}");
                 out_buf.as_mut().Destroy();
                 cdm::Status::kDecryptError
             }
@@ -472,7 +472,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         &mut self,
         _audio_decoder_config: &cdm::AudioDecoderConfig_2,
     ) -> cdm::Status {
-        debug!("OpenWv({:p}).InitializeAudioDecoder()", self);
+        debug!("OpenWv({self:p}).InitializeAudioDecoder()");
         cdm::Status::kInitializationError
     }
 
@@ -480,16 +480,16 @@ impl cdm::CommonCdm_methods for OpenWv {
         &mut self,
         _video_decoder_config: &cdm::VideoDecoderConfig_2,
     ) -> cdm::Status {
-        debug!("OpenWv({:p}).InitializeVideoDecoder()", self);
+        debug!("OpenWv({self:p}).InitializeVideoDecoder()");
         cdm::Status::kInitializationError
     }
 
     fn DeinitializeDecoder(&mut self, _decoder_type: cdm::StreamType) {
-        debug!("OpenWv({:p}).DeinitializeDecoder()", self);
+        debug!("OpenWv({self:p}).DeinitializeDecoder()");
     }
 
     fn ResetDecoder(&mut self, _decoder_type: cdm::StreamType) {
-        debug!("OpenWv({:p}).ResetDecoder()", self);
+        debug!("OpenWv({self:p}).ResetDecoder()");
     }
 
     unsafe fn DecryptAndDecodeFrame(
@@ -497,7 +497,7 @@ impl cdm::CommonCdm_methods for OpenWv {
         _encrypted_buffer: &cdm::InputBuffer_2,
         _video_frame: *mut cdm::VideoFrame,
     ) -> cdm::Status {
-        debug!("OpenWv({:p}).DecryptAndDecodeFrame()", self);
+        debug!("OpenWv({self:p}).DecryptAndDecodeFrame()");
         cdm::Status::kDecodeError
     }
 
@@ -506,12 +506,12 @@ impl cdm::CommonCdm_methods for OpenWv {
         _encrypted_buffer: &cdm::InputBuffer_2,
         _audio_frames: *mut cdm::AudioFrames,
     ) -> cdm::Status {
-        debug!("OpenWv({:p}).DecryptAndDecodeSamples()", self);
+        debug!("OpenWv({self:p}).DecryptAndDecodeSamples()");
         cdm::Status::kDecodeError
     }
 
     fn OnPlatformChallengeResponse(&mut self, _response: &cdm::PlatformChallengeResponse) {
-        debug!("OpenWv({:p}).OnPlatformChallengeResponse()", self);
+        debug!("OpenWv({self:p}).OnPlatformChallengeResponse()");
     }
 
     fn OnQueryOutputProtectionStatus(
@@ -520,11 +520,11 @@ impl cdm::CommonCdm_methods for OpenWv {
         _link_mask: u32,
         _output_protection_mask: u32,
     ) {
-        debug!("OpenWv({:p}).OnQueryOutputProtectionStatus()", self);
+        debug!("OpenWv({self:p}).OnQueryOutputProtectionStatus()");
     }
 
     unsafe fn OnStorageId(&mut self, _version: u32, _storage_id: *const u8, _storage_id_size: u32) {
-        debug!("OpenWv({:p}).OnStorageId()", self);
+        debug!("OpenWv({self:p}).OnStorageId()");
     }
 
     fn Destroy(&mut self) {
