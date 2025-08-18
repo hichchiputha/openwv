@@ -11,10 +11,9 @@ pub fn try_init_logging() -> bool {
     let mut builder: env_logger::Builder = env_logger::Builder::new();
 
     builder.format(|buf, record| {
-        let style = buf.default_level_style(record.level());
         writeln!(
             buf,
-            "[OpenWV {style}{:<5}{style:#}] {}",
+            "[OpenWV {:<5}] {}",
             record.level(),
             record.args()
         )
@@ -26,6 +25,7 @@ pub fn try_init_logging() -> bool {
 
     builder
         .filter_level(CONFIG.log_level)
+        .write_style(env_logger::WriteStyle::Never)
         .parse_env(env)
         .try_init()
         .is_ok()
