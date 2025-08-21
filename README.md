@@ -8,11 +8,12 @@ API][chromium-cdm-api].
 OpenWV does **not** come with a device identity and will not work without one.
 A device identity, typically stored as a [`.wvd` file][pywidevine], contains
 metadata about a Widevine client as well as a private key that authenticates
-that client to Widevine license servers. Depending on the client's identity, a
-license server may return low-value content keys (e.g. standard definition
-only), high-value keys (e.g. HD/UHD), or no keys at all. If you want to use
-OpenWV, you must obtain an appropriate `.wvd` file yourself and include it in
-the build as described below.
+that client to Widevine license servers. Some license servers return different
+sets of content keys to different clients: for example, many content providers
+encrypt high-definition content with a separate key and only give that key to
+device identities from hardware-backed ("L1") CDMs. If you want to use OpenWV,
+you must obtain an appropriate `.wvd` file yourself and include it in the build
+as described below.
 
 [official-cdm]: https://github.com/mozilla-firefox/firefox/blob/main/toolkit/content/gmp-sources/widevinecdm.json
 
@@ -62,8 +63,8 @@ or `libwidevinecdm.dylib` on macOS.*
 **If you manually check for addon updates, Firefox will replace OpenWV with
 Google's CDM**. The `media.gmp-widevinecdm.autoupdate` setting prevents
 automatic updates, but [there's no way][firefox-updater] to prevent manual
-updates. If this happens, you need only set `media.gmp-widevinecdm.version` back
-to `openwv`—no need to repeat the other steps.
+updates. If this happens, set `media.gmp-widevinecdm.version` back to
+`openwv`—no need to repeat the other steps.
 
 ### Chrome/Chromium
 1. Open `chrome://version/` and note the **parent** directory of your "Profile
