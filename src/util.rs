@@ -1,5 +1,7 @@
 use std::ffi::CStr;
 use std::fmt::{Debug, Display};
+#[cfg(not(test))]
+use std::fs::File;
 use std::io::Write;
 use std::marker::PhantomData;
 use std::slice::from_raw_parts;
@@ -8,7 +10,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::config::CONFIG;
 
 pub fn try_init_logging() -> bool {
-    let mut builder: env_logger::Builder = env_logger::Builder::new();
+    let mut builder = env_logger::Builder::new();
+
+    #[cfg(test)]
+    builder.is_test(true);
 
     builder.format(|buf, record| {
         writeln!(
@@ -18,6 +23,14 @@ pub fn try_init_logging() -> bool {
             record.args()
         )
     });
+
+    #[cfg(not(test))]
+    if let Some(mut path) = dirs::document_dir() {
+        path.push("openwv.log");
+        if let Ok(file) = File::create(path) {
+            builder.target(env_logger::Target::Pipe(Box::new(file)));
+        }
+    }
 
     let env = env_logger::Env::new()
         .filter("OPENWV_LOG")

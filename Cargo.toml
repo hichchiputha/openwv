@@ -19,6 +19,7 @@ env_logger = { version = "0.11", default-features = false }
 byteorder = "1"
 rand = { version = "0.9", default-features = false, features = ["std", "os_rng"] }
 uuid = "1"
+dirs = "5"
 
 ### RustCrypto crates
 rsa = "0.10.0-rc"
